@@ -1,19 +1,1212 @@
 ---
-title: "About Me"
-about:
-  id: me
-  template: broadside
-  image: img/profile.png
+title: "US Macroeconomic Dashboard"
+format: 
+  dashboard
 ---
 
-:::{#me}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
 
-## Goals
+```{r, include=FALSE, echo = FALSE}
+# Data Source: [FRED St. Louis](https://fred.stlouisfed.org/)
+library(httr)
+library(fredr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+library(readxl)
+library(reactable)
+library(lubridate)
+```
 
-## Education
+```{r, include=FALSE, echo = FALSE}
+fredr_set_key("40eca8e40e1e16076ad0da999af9d5eb") 
+```
 
-## Experience
+```{r, include=FALSE, echo = FALSE}
+#defining function to import multiple series from FRED as long as the sub-args are the same (generalize more if needed)
+fetch_fred_data <- function(series_ids,start_date = "2000-01-03",freq = "m",measure = "lin") {
+  data_list <- list()
+  
+  for (series in series_ids) {
+    data <- fredr(
+      series_id = series,
+      observation_start = as.Date(start_date),
+      observation_end = as.Date(Sys.Date()),
+      frequency = freq,
+      units = measure
+  )
+    data_list[[series]] <- data
+  }
+  merged_table <- Reduce(function(x, y) merge(x, y, by = c("date","realtime_start","realtime_end"), all = TRUE), data_list)
+  merged_table <- merged_table[sapply(merged_table, function(x) is.numeric(x) || is.Date(x) || is.POSIXct(x))]
+  merged_table <- merged_table[, !(colnames(merged_table) %in% c("realtime_start", "realtime_end"))]
+  colnames(merged_table) <- c("date", series_ids)
+  return (merged_table)
+}
 
-:::
+#calling nfci data from fred
+series_ids_nfci <- c("ANFCI", "NFCINONFINLEVERAGE", "NFCICREDIT", "NFCILEVERAGE", "NFCIRISK")
+Financial_Conditions <- fetch_fred_data(series_ids = series_ids_nfci,freq = "w")
 
-Thanks for checking out my web site!
+series_ids_del_rate <- c("DRALACBS","DRBLACBS","DRCLACBS","DRCCLACBS","DRCRELEXFACBS","DRSFRMACBS",
+  "DRSREACBS","DRFLACBS","DRFAPGACBS","DRLFRACBS","DROCLACBS",
+  "DRALT100S","DRBLT100S","DRCLT100S","DRCCLT100S","DRCRELEXFT100S","DRSFRMT100S",
+  "DRSRET100S","DRFLT100S","DRFAPGT100S","DRLFRT100S","DROCLT100S",
+  "DRALOBS","DRBLOBS","DRCLOBS","DRCCLOBS","DRCRELEXFOBS","DRSFRMOBS","DRSREOBS",
+  "DRFLOBS","DRFAPGOBS","DRLFROBS","DROCLOBS")
+'
+del_names <- c("All Loans","Business","Consumer","Credit Card","Commercial Real Estate Less Farmland",
+  "Single Family Mortgage","Secured by Real Estate","Farmland","Agricultural Production",
+  "Lease Financing Receivables","Consumer - Others",
+  "All  Loans  ","Business  ","Consumer  ","Credit Card  ","Commercial Real Estate  Less Farmland  ",
+  "Single Family Mortgage  ","Secured by Real Estate  ","Farmland  ","Agricultural Production  ",
+  "Lease Financing Receivables  ","Consumer - Others  ",
+  "All  Loans ","Business ","Consumer ","Credit Card ","Commercial Real Estate  Less Farmland ",
+  "Single Family Mortgage ","Secured by Real Estate ","Farmland ","Agricultural Production ",
+  "Lease Financing Receivables ","Consumer - Others ")
+'
+del_names_1 <- c("All Loans","Business","Consumer","Credit Card","Commercial Real Estate Less Farmland",
+  "Single Family Mortgage","Secured by Real Estate","Farmland","Agricultural Production",
+  "Lease Financing Receivables","Consumer - Others",
+  "All Loans","Business","Consumer","Credit Card","Commercial Real Estate Less Farmland",
+  "Single Family Mortgage","Secured by Real Estate","Farmland","Agricultural Production",
+  "Lease Financing Receivables","Consumer - Others",
+  "All Loans","Business","Consumer","Credit Card","Commercial Real Estate Less Farmland",
+  "Single Family Mortgage","Secured by Real Estate","Farmland","Agricultural Production",
+  "Lease Financing Receivables","Consumer - Others")
+
+del_categories <- c("Overall","Overall","Overall","Overall","Overall",
+  "Overall","Overall","Overall","Overall",
+  "Overall","Overall",
+  "Large Banks","Large Banks","Large Banks","Large Banks","Large Banks",
+  "Large Banks","Large Banks","Large Banks","Large Banks",
+  "Large Banks","Large Banks",
+  "Small Banks","Small Banks","Small Banks","Small Banks","Small Banks",
+  "Small Banks","Small Banks","Small Banks","Small Banks",
+  "Small Banks","Small Banks")
+Delinquency_Rate <- fetch_fred_data(series_ids = series_ids_del_rate,freq = "q")
+datas_del_rate <- Delinquency_Rate$date
+Delinquency_Rate <- data.table::transpose(Delinquency_Rate, keep.names = "series")
+Delinquency_Rate <- Delinquency_Rate[-1,-1]
+'rownames(Delinquency_Rate) <- del_names'
+colnames(Delinquency_Rate) <- datas_del_rate
+Delinquency_Rate$Categories <- del_categories
+Delinquency_Rate$Names <- del_names_1
+col_to_move <- "Categories"
+col_index <- which(colnames(Delinquency_Rate) == col_to_move)
+Delinquency_Rate <- Delinquency_Rate[, c(col_index, setdiff(1:ncol(Delinquency_Rate), col_index))]
+col_to_move_x <- "Names"
+col_index_x <- which(colnames(Delinquency_Rate) == col_to_move_x)
+Delinquency_Rate <- Delinquency_Rate[, c(col_index_x, setdiff(1:ncol(Delinquency_Rate), col_index_x))]
+Delinquency_Rate <- Delinquency_Rate[, c(1, 2, (ncol(Delinquency_Rate) - 7):ncol(Delinquency_Rate))]
+
+#calling senior loan survey data from fred
+series_ids_sen_loan <- c("DRTSCILM", "DRTSCIS", "DRTSCLCC", "STDSAUTO", "DRTSSP",
+"SUBLPDRCSC","STDSOTHCONS")
+Senior_Loan_Survey <- fetch_fred_data(series_ids = series_ids_sen_loan,
+                                      start_date = "2008-01-03",freq = "q")
+
+#calling jolts data and quits rate from fred
+series_ids_jolts <- c("JTSJOL", "JTSLDL", "JTSHIL", "JTSTSL","JTSOSL","JTSQUR")
+Jolts <- fetch_fred_data(series_ids = series_ids_jolts)
+
+WAGE_GRO_TRACK <- fredr(
+  series_id = "FRBATLWGT12MMAWMHWGO",
+  observation_start = as.Date("2000-01-03"),
+  observation_end = as.Date(Sys.Date()),
+  frequency = "m",
+  units = "lin" 
+)
+
+#calling payroll change data from fred
+series_ids_payroll <- c("ADPWNUSNERSA", "ADPWINDMANNERSA", "ADPWINDCONNERSA",
+                  "ADPWINDINFONERSA","ADPWINDPROBUSNERSA","ADPWINDLSHPNERSA",
+                  "ADPWINDFINNERSA","ADPWINDEDHLTNERSA","ADPWINDNRMINNERSA","ADPWINDTTUNERSA")
+Payroll_Private_Chg <- fetch_fred_data(series_ids = series_ids_payroll,
+start_date = "2010-01-03",measure = "chg")
+
+#calling payroll absolute data from fred
+Payroll_Private_Abs <- fetch_fred_data(series_ids = series_ids_payroll,
+start_date = "2010-01-03")
+
+PAYROLL <- fredr(
+  series_id = "PAYEMS",
+  observation_start = as.Date("2010-01-03"),
+  observation_end = as.Date(Sys.Date()),
+  frequency = "m",
+  units = "chg" 
+)
+PAYROLL$value <- PAYROLL$value * 1000 
+
+unemp_open_ratio <- fredr(
+  series_id = "UNEMPLOY",
+  observation_start = as.Date("2000-01-03"),
+  observation_end = as.Date(Sys.Date()),
+  frequency = "m",
+  units = "lin" 
+)
+'
+  read_excel("C:/Users/davireal/Downloads/SeriesReport-20240201164502_8008f6.xlsx", 
+    col_types = c("date", "numeric"))
+'
+unemp_open_ratio$ratio <- Jolts$JTSJOL/unemp_open_ratio$value
+
+#calling wage growth data from fred
+series_ids_wg <- c("FRBATLWGT12MMUMHWGWD1WP", "FRBATLWGT12MMUMHWGWD26WP", "FRBATLWGT12MMUMHWGWD51WP",
+                  "FRBATLWGT12MMUMHWGWD76WP","FRBATLWGT12MMUMHGO","FRBATLWGT12MMUMHWGJST",
+                  "FRBATLWGT12MMUMHWGJSW","FRBATLWGT3MMAUMHWGO","FRBATLWGT3MMAUMHWGJMJSW",
+                  "FRBATLWGT3MMAUMHWGJMJST")
+Wage_Growth <- fetch_fred_data(series_ids = series_ids_wg,start_date = "2010-01-03")
+
+cpi_sticky_pc1_ids <- c("STICKCPIM159SFRBATL","CORESTICKM159SFRBATL","CRESTKCPIXSLTRM159SFRBATL","STICKCPIXSHLTRM159SFRBATL","FLEXCPIM159SFRBATL","COREFLEXCPIM159SFRBATL")
+cpi_sticky_pc1 <- fetch_fred_data(series_ids = cpi_sticky_pc1_ids)
+
+cpi_sticky_3maa_ids <- c("STICKCPIM679SFRBATL","CORESTICKM679SFRBATL","CRESTKCPIXSLTRM679SFRBATL","STICKCPIXSHLTRM679SFRBATL","FLEXCPIM679SFRBATL","COREFLEXCPIM679SFRBATL")
+cpi_sticky_3maa <- fetch_fred_data(series_ids = cpi_sticky_3maa_ids)
+
+#calling pce data from fred
+series_ids_pce <- c("PCEPILFE","PCEPI")
+PCE <- fetch_fred_data(series_ids = series_ids_pce,measure = "pc1")
+
+pce_prob_ids <- c("STLPPMDEF","STLPPMLOW","STLPPMMID","STLPPM")
+pce_prob <- fetch_fred_data(series_ids = pce_prob_ids)
+
+'
+CPI_table_data <- CPI_table_data %>%
+  mutate_at(vars(cpi_table),
+            list(
+              MoM = ~ (./lag(., 1) - 1) * 100,
+              YoY = ~ (./lag(., 12) - 1) * 100
+            ),
+            .cols = 3:ncol(CPI_table_data))
+'
+
+#calling cpi data from fred
+series_ids_cpi <- c("CPIAUCSL","CPIFABSL","CPIUFDSL","CUSR0000SAF11","CUSR0000SEFV","CUSR0000SAF116","CPIHOSSL",
+"CUSR0000SAH1","CUSR0000SEHA","CUSR0000SEHB","CUSR0000SEHC","CUSR0000SAH2","CUSR0000SAH21",
+"CUSR0000SEHE","CUSR0000SEHF","CPIAPPSL","CPITRNSL","CUSR0000SAT1","CUSR0000SETA","CUSR0000SETA01",
+"CUSR0000SETA02","CUSR0000SETB","CUSR0000SETG01","CPIMEDSL","CUSR0000SAM1","CUSR0000SAM2",
+"CPIRECSL","CPIEDUSL","CPIOGSSL")
+
+cpi_table_names <- c("All Items","Food and Beverages","Food","Food at Home","Food Away from Home","Alcoholic Beverages",
+"Housing","Shelter","Rent of Primary Residence","Lodging Away from Home","Owners Equivalent Rent of Residences",
+"Fuels and Utilities","Household Energy","Fuel Oil and Other Fuels","Energy Services","Apparel",
+"Transportation","Private Transportation","New and Used Motor Vehicles","New Vehicles","Used Cars and Trucks",
+"Motor Fuel","Airline Fares","Medical Care","Medical Care Commodities","Medical Care Services","Recreation",
+"Education and Communication","Other Goods and Services")
+
+cpi_table_categories <- c("All Items","Food and Beverages","Food and Beverages","Food and Beverages","Food and Beverages","Food and Beverages",
+"Housing","Housing","Housing","Housing","Housing","Housing","Housing","Housing","Housing","Apparel",
+"Transportation","Transportation","Transportation","Transportation","Transportation",
+"Transportation","Transportation","Medical Care","Medical Care","Medical Care","Recreation",
+"Education and Communication","Other Goods and Services")
+
+series_special_cpi <- c("CUSR0000SA0L5","CPILEGSL","CPIULFSL","CPILFESL","CUSR0000SA0L2","CUSR0000SACL1",
+"CUSR0000SACL11","CUSR0000SACL1E","CPIENGSL","CUSR0000SACE","CUSR0000SAD","CUSR0000SAN",
+"CUSR0000SANL1","CUSR0000SANL13","CUSR0000SANL11","CUSR0000SANL113","CUSR0000SAS367",
+"CUSR0000SAS2RS","CUSR0000SAS","CUSR0000SASLE","CUSR0000SASL5","CUSR0000SASL2RS","CUSR0000SAS4")
+
+CPI <- fetch_fred_data(series_ids = series_ids_cpi,measure = "pc1")
+CPI_special <- fetch_fred_data(series_ids = series_special_cpi,measure = "pc1")
+
+CPI_table_data <- fetch_fred_data(series_ids = series_ids_cpi,measure = "pc1")
+datas_cpi <- CPI_table_data$date
+CPI_table_data <- CPI_table_data %>%
+  mutate_at(vars(names(CPI_table_data)[2:length(CPI_table_data)]), ~sprintf("%.2f", .))
+CPI_table_data <- data.table::transpose(CPI_table_data, keep.names = "series")[-1,-1]
+colnames(CPI_table_data) <- datas_cpi
+CPI_table_data$Categories <- cpi_table_categories
+CPI_table_data$Names <- cpi_table_names
+col_to_move_cpi <- c("Names","Categories")
+CPI_table_data <- CPI_table_data[, c(col_to_move_cpi, setdiff(names(CPI_table_data), col_to_move_cpi))]
+CPI_table_data <- CPI_table_data[, c(1, 2, (ncol(CPI_table_data) - 12):ncol(CPI_table_data))]
+
+ppi_series_ids <- c("PPIFIS","PPIFES","WPSFD49116")
+PPI <- fetch_fred_data(series_ids = ppi_series_ids)
+PPI <- PPI %>%
+  mutate_at(vars(ppi_series_ids),
+            list(
+              MoM = ~ (./lag(., 1) - 1) * 100,
+              YoY = ~ (./lag(., 12) - 1) * 100
+            ),
+            .cols = 3:ncol(PPI))
+
+private_payroll_size <- c("ADPMES1T19ENERSA","ADPMES20T49ENERSA","ADPMES50T249ENERSA","ADPMES250T499ENERSA","ADPMES500PENERSA")
+private_payroll_data <- fetch_fred_data(series_ids = private_payroll_size)
+private_payroll_data <- private_payroll_data %>%
+  mutate_at(vars(private_payroll_size),
+            list(
+              MoM = ~ (.-lag(., 1)),
+              YoY = ~ (.-lag(., 12))
+            ),
+            .cols = 3:ncol(private_payroll_data))
+
+claims_unemp <- c("ICSA","CCSA","IC4WSA","CC4WSA","IURSA","COVEMP")
+claims_unemp_names <- c("Initial Claims","Continued Claims","MMA of Initial Claims","MMA of Continued Claims","Insured Unemployment Rate","Covered Employment")
+init_cont_claims <- fetch_fred_data(series_ids = claims_unemp, freq = "w")
+init_cont_claims_dates <- init_cont_claims$date
+init_cont_claims <- data.table::transpose(init_cont_claims, keep.names = "series")[-1,-1]
+colnames(init_cont_claims) <- init_cont_claims_dates
+init_cont_claims$Names <- claims_unemp_names
+col_to_move_init <- "Names"
+init_cont_claims <- init_cont_claims[, c(col_to_move_init, setdiff(names(init_cont_claims), col_to_move_init))]
+init_cont_claims <- init_cont_claims[, c(1, (ncol(init_cont_claims) - 36):ncol(init_cont_claims))]
+
+series_ids_ust <- c("DGS1MO","DGS3MO","DGS6MO","DGS1","DGS2","DGS3","DGS5","DGS7","DGS10","DGS20","DGS30")
+Yield_Curve <- fetch_fred_data(series_ids = series_ids_ust, freq = "d")
+Yield_Curve_df <- Yield_Curve[c(nrow(Yield_Curve), nrow(Yield_Curve) - 5, nrow(Yield_Curve) - 22,
+                                nrow(Yield_Curve)-66, nrow(Yield_Curve)-126,nrow(Yield_Curve)-252), ]
+Yield_Curve_df <- Yield_Curve_df[ ,-1]
+Yield_Curve_df <- data.table::transpose(Yield_Curve_df, keep.names = "series")
+rownames(Yield_Curve_df) <- c("1 M","3 M","6 M","1 Y","2 Y","3 Y","5 Y","7 Y",
+                              "10 Y","20 Y","30 Y")
+colnames(Yield_Curve_df) <- c("series","1 D","5 D","1 M","3 M","6 M","12 M")
+Yield_Curve_df <- Yield_Curve_df[ ,-1]
+
+fed_funds_rate <- fetch_fred_data(series_ids = c("DFF","DFEDTARU","DFEDTARL"), freq = "d")
+mult_jobholders_vars <- c("LNS12026619","LNU02026631","LNU02026625","LNU02026628","LNU02026634","LNS12026620")
+mult_jobholders_vars_1 <- c("LNS12026619","LNU02026631","LNU02026625","LNU02026628","LNU02026634")
+mult_jobholders <- fetch_fred_data(series_ids = mult_jobholders_vars)
+mult_jobholders_1 <- fetch_fred_data(series_ids = mult_jobholders_vars_1)
+mult_jobholders_names <- c('Multiple Jobholders','Full Time','Primary Full Time','Part Time','Hours Vary')
+mult_job_dates <- mult_jobholders_1$date
+mult_jobholders_1 <- data.table::transpose(mult_jobholders_1, keep.names = "series")[-1,-1]
+colnames(mult_jobholders_1) <- mult_job_dates
+mult_jobholders_1$Names <- mult_jobholders_names
+col_to_move_mult <- "Names"
+mult_jobholders_1 <- mult_jobholders_1[, c(col_to_move_mult, setdiff(names(mult_jobholders_1), col_to_move_mult))]
+mult_jobholders_1 <- mult_jobholders_1[, c(1, (ncol(mult_jobholders_1) - 52):ncol(mult_jobholders_1))]
+
+lf_status_flows_ids <- c("LNS17000000","LNS17100000","LNS17200000","LNS17300000","LNS17400000","LNS17500000",
+  "LNS17600000","LNS17700000","LNS17800000","LNS17900000","LNS18000000","LNS18100000",
+  "LNS18200000")
+lf_status_flows <- fetch_fred_data(series_ids = lf_status_flows_ids)
+datas_lf_status <- lf_status_flows$date
+lf_status_flows <- data.table::transpose(lf_status_flows, keep.names = "series")[-1,-1]
+lf_status_flows <- lf_status_flows[-13,]
+rownames(lf_status_flows) <- c('Employed to','Unemployed to','Not in Labor Force to','Marginal Inflows to',
+                               'Employed to ','Unemployed to ','Not in Labor Force to ','Marginal Inflows to ',
+'Employed to  ','Unemployed to  ','Not in Labor Force to  ','Marginal Inflows to  ')
+colnames(lf_status_flows) <- datas_lf_status
+lf_status_flows$Categories <- c("Employed","Employed","Employed","Employed",
+                                "Unemployed","Unemployed","Unemployed","Unemployed",
+                                "Not in Labor Force","Not in Labor Force","Not in Labor Force","Not in Labor Force")
+col_to_move_lf_status <- "Categories"
+lf_status_flows <- lf_status_flows[, c(col_to_move_lf_status, setdiff(names(lf_status_flows), col_to_move_lf_status))]
+lf_status_flows <- lf_status_flows[, c(1, (ncol(lf_status_flows) - 5):ncol(lf_status_flows))]
+
+unemp_duration_ids <- c("UEMPMEAN","LNU03008276",
+                        "LNU03008396","LNU03008756","LNU03008516","LNU03008876","LNU03008636",
+                        "LNS13008397","LNS13025701","LNS13008517","LNS13025702","LNS13025703")
+unemp_duration <- fetch_fred_data(series_ids = unemp_duration_ids)
+
+unemp_reasons_ids <- c("LNS13023706","LNS13023622","LNS13023558","LNS13023570")
+unemp_reasons <- fetch_fred_data(series_ids = unemp_reasons_ids)
+
+lfpr_ids <- c("CIVPART","LNS11300036","LNS11300060","LNS11324230")
+lfpr <- fetch_fred_data(series_ids = lfpr_ids)
+lfpr <- lfpr %>%
+  mutate_at(vars(lfpr_ids),
+            list(
+              YoY = ~ (.-lag(., 12))
+            ),
+            .cols = 3:ncol(lfpr))
+
+alt_measures_unemp_ids <- c("U1RATE","U2RATE","UNRATE","U4RATE","U5RATE","U6RATE")
+alt_measures_unemp <- fetch_fred_data(series_ids = alt_measures_unemp_ids)
+
+housing_ids <- c("PERMIT","PERMIT1","PERMIT24","PERMIT5","AUTHNOTTSA","AUTHNOT1USA","AUTHNOT24U","AUTHNOT5MU",
+  "HOUST","HOUST1F","HOUST2F","HOUST5F","UNDCONTSA","UNDCON1USA","UNDCON24USA","UNDCON5MUSA",
+  "COMPUTSA","COMPU1USA","COMPU24USA","COMPU5MUSA")
+housing_df <- fetch_fred_data(series_ids = housing_ids)
+
+housing_price_indexes_ids <- c("CSUSHPISA","USAUCSFRCONDOSMSAMID")
+housing_price_indexes <- fetch_fred_data(series_ids = housing_price_indexes_ids,measure = "pc1")
+```
+
+# Monetary Policy
+
+## Row
+
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
+#! title: US Treasury Yield Curve
+Yield_Curve_graf <- plot_ly(Yield_Curve_df, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`1 D`, name = 'Latest') %>%
+  add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`5 D`, name = 'Last Week') %>%
+  add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`1 M`, name = 'Last Month') %>%
+  add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`3 M`, name = 'Last Quarter') %>%
+  add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`6 M`, name = 'Last Semester') %>%
+  add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`12 M`, name = 'Last Year') %>%
+  layout(title = 'Yield Curve',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+Yield_Curve_graf
+```
+
+## Row
+
+### Column
+
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
+#! title: FED Funds Effective Rate 
+fed_funds_rate_graf <- plot_ly(fed_funds_rate, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~DFF, name = 'Effective') %>%
+  layout(title = 'FED Funds Rate',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+fed_funds_rate_graf
+```
+
+### Column
+
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
+#! title: US Treasuries
+Treasuries_graf <- plot_ly(Yield_Curve, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~DGS1MO, name = '1 Month', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS3MO, name = '3 Months', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS6MO, name = '6 Months', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS1, name = '1 Year', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS2, name = '2 Year') %>%
+  add_trace(x = ~date, y = ~DGS3, name = '3 Years', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS5, name = '5 Years', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS7, name = '7 Years', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS10, name = '10 Years') %>%
+  add_trace(x = ~date, y = ~DGS20, name = '20 Years', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~DGS30, name = '30 Years') %>%
+  layout(title = 'Treasuries',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+Treasuries_graf
+```
+
+# Labor Market
+
+## Column {.tabset}
+
+### Payroll
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Total
+payroll_graf <- plot_ly(Payroll_Private_Abs, type = 'bar') %>%
+  add_trace(x = ~date, y = ~ADPWNUSNERSA, name = 'Total Private', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~ADPWINDMANNERSA, name = 'Manufacturing', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDCONNERSA, name = 'Construction', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDINFONERSA, name = 'Information', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDPROBUSNERSA, name = 'Services', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Health', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDFINNERSA, name = 'Financial', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDNRMINNERSA, name = 'Mining', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDTTUNERSA, name = 'Trade', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Leisure and Hospitality', visible = FALSE) %>% 
+  layout(title = 'Payroll',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons'),
+          hovermode = 'compare',
+          barmode = 'stack',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Breakdown", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)),
+                list(title = "Private Payroll Breakdown"))),
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Payroll")))))))
+  
+# Display the subplots
+payroll_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Change
+payroll_graf_chg <- plot_ly(Payroll_Private_Chg) %>%
+  add_trace(x = ~date, y = ~ADPWNUSNERSA, name = 'Total Private', type = 'scatter', mode = 'lines') %>%
+  add_trace(x = PAYROLL$date, y = PAYROLL$value, name = 'Total', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~ADPWINDMANNERSA, name = 'Manufacturing', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDCONNERSA, name = 'Construction', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDINFONERSA, name = 'Information', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDPROBUSNERSA, name = 'Services', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Health', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDFINNERSA, name = 'Financial', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDNRMINNERSA, name = 'Mining', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDTTUNERSA, name = 'Trade', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Leisure and Hospitality', visible = FALSE) %>% 
+  layout(title = 'Payroll',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons', range = c(-2e5, 1e6)),
+          hovermode = 'compare',
+          barmode = 'stack',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Breakdown", method = "update",
+              args = list(
+                list(visible = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)),
+                list(title = "Private Payroll Breakdown"))),
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Payroll")))))))
+  
+# Display the subplots
+payroll_graf_chg
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Employee Number
+payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
+  add_bars(x = ~date, y = ~ADPMES1T19ENERSA, name = 'Small 1-19') %>%
+  add_bars(x = ~date, y = ~ADPMES20T49ENERSA, name = 'Small 20-49') %>%
+  add_bars(x = ~date, y = ~ADPMES50T249ENERSA, name = 'Medium 50-249') %>%
+  add_bars(x = ~date, y = ~ADPMES250T499ENERSA, name = 'Medium 250-499') %>%
+  add_bars(x = ~date, y = ~ADPMES500PENERSA, name = 'Large 500+') %>%
+  
+  add_bars(x = ~date, y = ~ADPMES1T19ENERSA_MoM, name = 'Small 1-19', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES20T49ENERSA_MoM, name = 'Small 20-49', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES50T249ENERSA_MoM, name = 'Medium 50-249', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES250T499ENERSA_MoM, name = 'Medium 250-499', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES500PENERSA_MoM, name = 'Large 500+', visible = FALSE) %>%
+  
+  add_trace(x = ~date, y = ~ADPMES1T19ENERSA_YoY, name = 'Small 1-19', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES20T49ENERSA_YoY, name = 'Small 20-49', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES50T249ENERSA_YoY, name = 'Medium 50-249', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES250T499ENERSA_YoY, name = 'Medium 250-499', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES500PENERSA_YoY, name = 'Large 500+', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  layout(title = 'Private Payroll, Persons by Firm Size',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons'),
+          hovermode = 'compare',
+          barmode = 'stack',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Private Payroll, Persons by Firm Size",
+                     yaxis = list(title = 'Persons', range = c(-2e6, 1.5e8))))),
+          list(
+              label = "MoM", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Payroll Month Over Month, Persons by Firm Size",
+                     yaxis = list(title = 'Persons', range = c(-2e5, 6e5))))),
+          
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,TRUE)),
+                list(title = "Payroll Year over Year, Persons by Firm Size",
+                     yaxis = list(title = 'Persons', range = c(-2e6, 3e6)))))
+          ))))
+  
+# Display the subplots
+payroll_emp_graf
+```
+
+### JOLTS
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Job Openings and Labor Turnover Survey
+Jolts_graf <- plot_ly(Jolts, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~JTSJOL, name = 'Job Openings') %>%
+  add_trace(x = ~date, y = ~JTSLDL, name = 'Layoffs and Discharges') %>%
+  add_trace(x = ~date, y = ~JTSHIL, name = 'Hires') %>%
+  add_trace(x = ~date, y = ~JTSTSL, name = 'Separations') %>%
+  add_trace(x = ~date, y = ~JTSOSL, name = 'Other Separations') %>%
+  layout(title = 'Jolts',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Level in Thousands'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+Jolts_graf
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Job Openings/Unemployed Persons
+unemp_plot <- plot_ly(unemp_open_ratio, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = unemp_open_ratio$date, y = unemp_open_ratio$value, name = 'Unemployed', visible = FALSE) %>%
+  add_trace(x = Jolts$date, y = Jolts$JTSJOL, name = 'Job Openings', visible = FALSE) %>%
+  add_trace(x = unemp_open_ratio$date, y = unemp_open_ratio$ratio, name = 'Seasonally Adjusted') %>%
+  layout(title = 'Job Openings/Unemployed persons',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Ratio'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare',
+         updatemenus = list(list(
+         active = -1,
+         type = "buttons",
+         buttons = list(
+            list(
+                label = "Absolute", method = "update",
+                args = list(
+                  list(visible = c(TRUE,TRUE,TRUE,FALSE)),
+                  list(title = "Unemployed vs Job Openings",
+                       yaxis = list(title = 'Persons')))),
+            list(
+                label = "Ratio", method = "update",
+                args = list(list(visible = c(TRUE,FALSE,FALSE,TRUE)),
+                            list(title =  "Job Openings/Unemployed persons",
+                                 yaxis = list(title = 'Ratio')))
+                
+                )))))
+unemp_plot 
+```
+
+### Wage Growth
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Wage Growth Tracker 
+joined_plot <- plot_ly(Wage_Growth, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHGO, name = '12M Overall') %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHWGJSW, name = 'Switcher',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHWGJST, name = 'Stayer',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHWGWD1WP, name = '1st-25st',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHWGWD26WP, name = '26st-50st',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHWGWD51WP, name = '51st-75',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT12MMUMHWGWD76WP, name = '76st-100st',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT3MMAUMHWGO, name = '3M Overall') %>%
+  add_trace(x = ~date, y = ~FRBATLWGT3MMAUMHWGJMJSW, name = '3M Switcher',visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FRBATLWGT3MMAUMHWGJMJST, name = '3M Stayer',visible = FALSE) %>%
+  layout(title = 'Wage Growth Tracker by Wage Level',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare',
+         updatemenus = list(list(
+         active = -1,
+         type = "buttons",
+         buttons = list(
+            list(
+                label = "Decision", method = "update",
+                args = list(
+                  list(visible = c(TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE)),
+                  list(title =  "Wage Growth Tracker by Decision"))),
+            list(
+                label = "Wage Level", method = "update",
+                args = list(list(visible = c(TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)),
+                            list(title =  "Wage Growth Tracker by Wage Level"))),
+            list(
+                label = "Overall", method = "update",
+                args = list(list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE)),
+                            list(title =  "Wage Growth Tracker Overall")))
+            ))))
+joined_plot       
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Quits Rate x Wage Growth
+QUITS_RATE_graf <- plot_ly(Jolts, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~JTSQUR, name = 'Quits Rate', type = 'scatter', mode = 'lines', yaxis = 'y2') %>%
+  add_trace(x = WAGE_GRO_TRACK$date, y = WAGE_GRO_TRACK$value, name = 'Wage Growth Tracker', type = 'scatter', mode = 'lines') %>%
+  layout(title = 'Quits Rate x Wage Growth Tracker',
+         xaxis = list(title = ''),
+         yaxis = list(title = ''),
+         yaxis2 = list(title = '', overlaying = 'y', side = 'right'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+QUITS_RATE_graf
+```
+
+### Multiple Jobholders
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Graph
+mult_jobholders_graf_1 <- plot_ly(mult_jobholders, type = 'scatter', mode='lines') %>%
+  add_trace(x = ~date, y = ~LNS12026620, name = 'Multiple Jobholders') %>%
+  layout(title = 'Multiple Jobholders as a Percent of Employed',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare')
+  
+# Display the subplots
+mult_jobholders_graf_1
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Table
+reactable(
+  mult_jobholders_1,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  columns = list(
+    Names = colDef(
+      sticky = "left"
+    ))
+)
+```
+
+### Labor Force Status Flows
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#! Labor Force Status Flows
+reactable(
+  lf_status_flows,
+  groupBy = "Categories",
+  onClick = "expand",
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  columns = list(
+    Categories = colDef(
+      sticky = "left"
+    ))
+)
+```
+
+### Unemployment
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Initial Claims
+reactable(
+  init_cont_claims,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  columns = list(
+    Names = colDef(
+      sticky = "left"
+    ))
+)
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Reasons for Unemployment
+unemp_reasons_graf <- plot_ly(unemp_reasons, type = 'bar') %>%
+  add_bars(x = ~date, y = ~LNS13023706, name = 'Job Leavers') %>%
+  add_bars(x = ~date, y = ~LNS13023622, name = 'Job Losers') %>%
+  add_bars(x = ~date, y = ~LNS13023558, name = 'Reentrants') %>%
+  add_bars(x = ~date, y = ~LNS13023570, name = 'New Entrants') %>%
+  layout(title = 'Unemployment Reasons',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare',
+          barmode = 'stack')
+  
+# Display the subplots
+unemp_reasons_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Duration of Unemployment
+unemp_duration_graf <- plot_ly(unemp_duration, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~UEMPMEAN, name = 'Average', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~LNU03008276, name = 'Median', visible = FALSE) %>%
+
+  add_trace(x = ~date, y = ~LNU03008396, name = 'Less than 5') %>%
+  add_trace(x = ~date, y = ~LNU03008756, name = '5-14') %>%
+  add_trace(x = ~date, y = ~LNU03008516, name = '15 and Over') %>%
+  add_trace(x = ~date, y = ~LNU03008876, name = '15-26') %>%
+  add_trace(x = ~date, y = ~LNU03008636, name = '27 and Over') %>%
+  
+  add_bars(x = ~date, y = ~LNS13008397, name = 'Less than 5', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~LNS13025701, name = '5-14', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~LNS13008517, name = '15 and Over', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~LNS13025702, name = '15-26', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~LNS13025703, name = '27 and Over', visible = FALSE) %>%
+  layout(title = 'Duration of Unemployment',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons'),
+          hovermode = 'compare',
+          barmode = 'stack',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Weeks", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Duration of Unemployment in Weeks",
+                     yaxis = list(title = 'Weeks')))),
+          list(
+              label = "Number", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,
+                                 TRUE,TRUE,FALSE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Duration of Unemployment Number of Unemployed",
+                     yaxis = list(title = 'Persons')))),
+          
+          list(
+              label = "Percent", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,FALSE,TRUE,TRUE)),
+                list(title = "Duration of Unemployment as a Percent of Unemployed",
+                     yaxis = list(title = 'Percent'))))
+          ))))
+  
+# Display the subplots
+unemp_duration_graf
+```
+
+### Measures on Labor Subutilization
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Labor Force Participation Rate
+lfpr_graf <- plot_ly(lfpr, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~CIVPART, name = 'Total') %>%
+  add_trace(x = ~date, y = ~LNS11300036, name = '20-24', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~LNS11300060, name = '25-54', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~LNS11324230, name = '55+', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~LNS11300036_YoY, name = '20-24', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~LNS11300060_YoY, name = '25-54', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~LNS11324230_YoY, name = '55+', visible = FALSE) %>%
+  layout(title = 'Labor Force  Rate',
+          xaxis = list(title = 'Date'),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare',
+          #barmode = 'stack',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE)),
+                list(title = "Labor Force Participation Rate",
+                     yaxis = list(title = 'Percent')))),
+          list(
+              label = "By Age", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,
+                                 TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE)),
+                list(title = "Labor Force Participation Rate by Age",
+                     yaxis = list(title = 'Percent')))),
+          
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,
+                                 FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE)),
+                list(title = "Labor Force Participation Rate YoY",
+                     yaxis = list(title = 'Percent'))))
+          ))))
+  
+# Display the subplots
+lfpr_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Alternative Measures
+alt_measures_unemp_graf <- plot_ly(alt_measures_unemp, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~U1RATE, name = 'Unemployed 15+ Weeks') %>%
+  add_trace(x = ~date, y = ~U2RATE, name = 'Job Losers') %>%
+  add_trace(x = ~date, y = ~UNRATE, name = 'Official') %>%
+  add_trace(x = ~date, y = ~U4RATE, name = 'Discouraged') %>%
+  add_trace(x = ~date, y = ~U5RATE, name = 'Discouraged + Marginally Attached') %>%
+  add_trace(x = ~date, y = ~U6RATE, name = 'Marginally Attached + Part Time') %>%
+  layout(title = 'Labor Subutilization as a Percent of Civilian Labor Force',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare')
+  
+# Display the subplots
+alt_measures_unemp_graf
+```
+
+# Financial Conditions
+
+## Column {.tabset}
+
+### Families
+
+```{r, include=TRUE, echo = FALSE}
+Financial_Conditions_Families_graf <- plot_ly(Financial_Conditions, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ANFCI, name = 'Adjusted') %>%
+  add_trace(x = ~date, y = ~NFCINONFINLEVERAGE, name = 'Non Financial Leverage') %>%
+  layout(title = 'National Financial Conditions Index - Families',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Index'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+Financial_Conditions_Families_graf
+```
+
+### Corporate
+
+```{r, include=TRUE, echo = FALSE}
+Financial_Conditions_Corporate_graf <- plot_ly(Financial_Conditions, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ANFCI, name = 'Adjusted') %>%
+  add_trace(x = ~date, y = ~NFCIRISK, name = 'Risk') %>%
+  add_trace(x = ~date, y = ~NFCICREDIT, name = 'Credit') %>%
+  add_trace(x = ~date, y = ~NFCILEVERAGE, name = 'Leverage') %>%
+  layout(title = 'National Financial Conditions Index - Corporate',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Index'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+Financial_Conditions_Corporate_graf
+```
+
+# Credit Conditions
+
+## Column {.tabset}
+
+### Senior Loan Survey
+
+```{r, include=TRUE, echo = FALSE}
+senior_loan_graf <- plot_ly(Senior_Loan_Survey, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~DRTSCILM, name = 'Large and Middle Firms') %>%
+  add_trace(x = ~date, y = ~DRTSCIS, name = 'Small Firms') %>%
+  add_trace(x = ~date, y = ~DRTSCLCC, name = 'Credit Card') %>%
+  add_trace(x = ~date, y = ~STDSAUTO, name = 'Auto') %>%
+  add_trace(x = ~date, y = ~DRTSSP, name = 'Mortgage') %>%
+  add_trace(x = ~date, y = ~SUBLPDRCSC, name = 'Construction') %>%
+  add_trace(x = ~date, y = ~STDSOTHCONS, name = 'Consumer') %>%
+  layout(title = 'Senior Loan Officer Survey',
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Net % of Banks Tightening Standards'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+senior_loan_graf
+```
+
+### Delinquency Rate
+
+```{r, include=TRUE, echo = FALSE}
+reactable(
+  Delinquency_Rate,
+  groupBy = "Names",
+  onClick = "expand",
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  columns = list(
+    Names = colDef(
+      sticky = "left"
+    ),
+    Categories = colDef(
+      sticky = "left"
+    ))
+)
+```
+# Inflation
+
+## Column {.tabset}
+
+### CPI
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
+#| title: Overview
+cpi_graf <- plot_ly(CPI_special, type = "scatter", mode = "lines") %>%
+  add_trace(x = CPI$date, y = CPI$CPIAUCSL, name = "CPI") %>%
+  add_trace(x = ~date, y = ~CPILFESL, name = "CPI Core") %>%
+  add_trace(x = ~date, y = ~CUSR0000SAS, name = "Services", visible = FALSE) %>%
+  add_trace(x = CPI$date, y = CPI$CPIUFDSL, name = "Food", visible = FALSE) %>%
+  add_trace(x = ~date, y = ~CPIENGSL, name = "Energy", visible = FALSE) %>%
+  add_trace(x = CPI$date, y = CPI$CUSR0000SAH1, name = "Shelter", visible = FALSE) %>%
+  layout(title = 'CPI Core',
+          xaxis = list(title = 'Date'),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Core", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "CPI Core"))),
+          list(
+              label = "Volatile", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)),
+                list(title = "CPI Volatile Components")))))))
+cpi_graf                
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: FED Atlanta
+cpi_sticky_graf <- plot_ly(cpi_sticky_pc1, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~STICKCPIM159SFRBATL, name = 'Sticky') %>%
+  add_trace(x = ~date, y = ~CORESTICKM159SFRBATL, name = 'Sticky Core') %>%
+  ##add_trace(x = ~date, y = ~CRESTKCPIXSLTRM159SFRBATL, name = 'Sticky Core Less Shelter') %>%
+  #add_trace(x = ~date, y = ~STICKCPIXSHLTRM159SFRBATL, name = 'Sticky Less Shelter') %>%
+  add_trace(x = ~date, y = ~FLEXCPIM159SFRBATL, name = 'Flexible') %>%
+  add_trace(x = ~date, y = ~COREFLEXCPIM159SFRBATL, name = 'Flexible Core') %>%
+  
+  add_trace(x = ~date, y = cpi_sticky_3maa$STICKCPIM679SFRBATL, name = 'Sticky 3M', visible = FALSE) %>%
+  add_trace(x = ~date, y = cpi_sticky_3maa$CORESTICKM679SFRBATL, name = 'Sticky Core 3M', visible = FALSE) %>%
+  #add_trace(x = ~date, y = cpi_sticky_3maa$CRESTKCPIXSLTRM679SFRBATL, name = 'Sticky Core Less Shelter 3M', visible = FALSE) %>%
+  #add_trace(x = ~date, y = cpi_sticky_3maa$STICKCPIXSHLTRM679SFRBATL, name = 'Sticky Less Shelter 3M', visible = FALSE) %>%
+  add_trace(x = ~date, y = cpi_sticky_3maa$FLEXCPIM679SFRBATL, name = 'Flexible 3M', visible = FALSE) %>%
+  add_trace(x = ~date, y = cpi_sticky_3maa$COREFLEXCPIM679SFRBATL, name = 'Flexible Core 3M', visible = FALSE) %>%
+  layout(title = '12 Month Alternative CPI Indexes',
+          xaxis = list(title = 'Date'),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE)),
+                list(title = "12 Month Alternative CPI Indexes"))),
+          list(
+              label = "3 Months a.a.", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE)),
+                list(title = "3 Month Alternative CPI Indexes"))),
+          list(
+              label = "Sticky", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,FALSE,FALSE,
+                                 TRUE,TRUE,FALSE,FALSE)),
+                list(title = "Sticky CPI Indexes"))),
+          list(
+              label = "Flexible", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,TRUE,TRUE,
+                                 FALSE,FALSE,TRUE,TRUE)),
+                list(title = "Flexible CPI Indexes")))
+          ))))
+cpi_sticky_graf
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Table
+reactable(
+  CPI_table_data,
+  groupBy = "Categories",
+  onClick = "expand",
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  columns = list(
+    Names = colDef(
+      sticky = "left"
+    ),
+    Categories = colDef(
+      sticky = "left"
+    ))
+)
+```
+
+### PCE
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Overview
+pce_graf <- plot_ly(PCE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~PCEPI, name = 'PCE') %>%
+  add_trace(x = ~date, y = ~PCEPILFE, name = 'Core PCE') %>%
+  layout(title = 'PCE',
+         xaxis = list(title = 'Date'),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+pce_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Trajectory Probability
+pce_prob_graf <- plot_ly(pce_prob, type = 'bar') %>%
+  add_bars(x = ~date, y = ~STLPPMDEF, name = '< 0%') %>%
+  add_bars(x = ~date, y = ~STLPPMLOW, name = '0% - 1,5%') %>%
+  add_bars(x = ~date, y = ~STLPPMMID, name = '1,5% - 2,5%') %>%
+  add_bars(x = ~date, y = ~STLPPM, name = '> 2,5%') %>%
+  layout(title = 'PCE Next 12 months Probability',
+          xaxis = list(title = 'Date'),
+          yaxis = list(title = 'Percent'),
+          hovermode = 'compare',
+          barmode = 'stack')
+pce_prob_graf
+```
+
+### PPI
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#! title: PPI Overview
+ppi_graf <- plot_ly(PPI, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~PPIFIS_MoM, name = 'Overall') %>%
+  add_trace(x = ~date, y = ~PPIFES_MoM, name = 'Core') %>%
+  add_trace(x = ~date, y = ~WPSFD49116_MoM, name = 'Core Less Trade') %>%
+  
+  add_trace(x = ~date, y = ~PPIFIS_YoY, name = 'Overall', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~PPIFES_YoY, name = 'Core', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~WPSFD49116_YoY, name = 'Core Less Trade', visible = FALSE) %>%
+  layout(title = 'PPI YoY',
+          xaxis = list(title = 'Date'),
+          yaxis = list(title = 'Persons'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "MoM", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE)),
+                list(title = "PPI MoM"))),
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE)),
+                list(title = "PPI YoY")))
+          ))))
+ppi_graf
+```
+
+# Housing
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: New houses
+housing_df_graf <- plot_ly(housing_df, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~PERMIT, name = 'Total') %>%
+  add_trace(x = ~date, y = ~PERMIT1, name = 'Single') %>%
+  add_trace(x = ~date, y = ~PERMIT24, name = '2-4 Units') %>%
+  add_trace(x = ~date, y = ~PERMIT5, name = '5+ Units') %>%
+  add_trace(x = ~date, y = ~AUTHNOTTSA, name = 'Total', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~AUTHNOT1USA, name = 'Single', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~AUTHNOT24U, name = '2-4 Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~AUTHNOT5MU, name = '5+ Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~HOUST, name = 'Total', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~HOUST1F, name = 'Single', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~HOUST2F, name = '2-4 Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~HOUST5F, name = '5+ Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~UNDCONTSA, name = 'Total', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~UNDCON1USA, name = 'Single', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~UNDCON24USA, name = '2-4 Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~UNDCON5MUSA, name = '5+ Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~COMPUTSA, name = 'Total', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~COMPU1USA, name = 'Single', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~COMPU24USA, name = '2-4 Units', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~COMPU5MUSA, name = '5+ Units', visible = FALSE) %>%
+  layout(title = 'New Housing Units Authorized in Permit-Issuing Places',
+          xaxis = list(title = 'Date'),
+          yaxis = list(title = 'Thousands'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          direction = "right",
+          x = 0.9,
+          y = -2.3,
+          buttons = list(
+          list(
+              label = "Permits", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE)),
+                list(title = "New Housing Units Authorized in Permit-Issuing Places"))),
+          list(
+              label = "Not Started", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE)),
+                list(title = "New Housing Units Not Started"))),
+          list(
+              label = "Started", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE)),
+                list(title = "New Housing Units Started"))),
+          list(
+              label = "Construction", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE)),
+                list(title = "New Housing Units Under Construction"))),
+          list(
+              label = "Completed", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE)),
+                list(title = "New Housing Units Completed")))
+          ))))
+housing_df_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
+#| title: House Price Indexes vs OER
+house_price_graf <- plot_ly(housing_price_indexes, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~CSUSHPISA, name = 'Shiller') %>%
+  add_trace(x = ~date, y = ~USAUCSFRCONDOSMSAMID, name = 'Zillow') %>%
+  add_trace(x = CPI$date, y = CPI$CUSR0000SEHC, name = 'OER') %>%
+  layout(title = 'House Prices vs OER',
+         xaxis = list(title = 'Date'),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+house_price_graf
+```
