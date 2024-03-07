@@ -443,7 +443,7 @@ treasury_statement_m_graf
 debt_interest_graf <- plot_ly(treasury_statement_m, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~GFDEGDQ188S, name = 'Debt') %>%
   add_trace(x = ~date, y = ~FYOIGDA188S, name = 'Interest', yaxis = 'y2') %>%
-  layout(title = 'Primary Result - Net as a % of GDP',
+  layout(title = 'Debt x Interest - Net as a % of GDP',
          xaxis = list(title = ''),
          yaxis = list(title = '% GDP'),
          yaxis2 = list(title = '', overlaying = 'y', side = 'right', range = c(1, 4)),
