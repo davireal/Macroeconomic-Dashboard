@@ -332,10 +332,9 @@ fiscal <- fetch_fred_data(series_ids = fiscal_ids, freq = "d")
 
 fiscal_ids_2 <- c("WRESBAL","H41RESPPALDKXAWNWW","WTREGEN")
 fiscal_2 <- fetch_fred_data(series_ids = fiscal_ids_2, freq = "w")
-'
-treasury_statement_ids <- c("MTSO133FMS","MTSR133FMS","MTSDS133FMS","FYFSGDA188S",
-                            "GFDEGDQ188S","","","")
-treasury_statement'
+
+treasury_statement_m_ids <- c("GFDEGDQ188S","FYOIGDA188S","FYFRGDA188S","FYONGDA188S","FYFSGDA188S")
+treasury_statement_m <- fetch_fred_data(series_ids = treasury_statement_m_ids, freq = "a")
 
 'treasury_debt_stat <- c("GFDEBTN","FDHBFRBN","FDHBFIN","FYGFDPUN","FDHBPIN","FDHBATN")'
 
@@ -405,6 +404,53 @@ Treasuries_graf
 # Fiscal Policy
 
 ## Column {.tabset}
+
+### Primary 
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Fiscal Result
+treasury_statement_m_graf <- plot_ly(treasury_statement_m, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~FYFRGDA188S, name = 'Receipts', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FYONGDA188S, name = 'Outlays', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~FYFSGDA188S, name = 'Net') %>%
+  layout(title = 'Primary Result - Net as a % of GDP',
+         xaxis = list(title = ''),
+         yaxis = list(title = '% GDP'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare',
+         updatemenus = list(list(
+         active = -1,
+         type = "buttons",
+         buttons = list(
+            list(
+                label = "Result", method = "update",
+                args = list(
+                  list(visible = c(TRUE,TRUE,TRUE,FALSE)),
+                  list(title = "Primary Result as a % of GDP"))),
+            list(
+                label = "Net", method = "update",
+                args = list(list(visible = c(TRUE,FALSE,FALSE,TRUE)),
+                            list(title =  "Primary Result - Net as a % of GDP"))
+                
+                )))))
+treasury_statement_m_graf 
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Debt x Interest
+debt_interest_graf <- plot_ly(treasury_statement_m, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~GFDEGDQ188S, name = 'Debt') %>%
+  add_trace(x = ~date, y = ~FYOIGDA188S, name = 'Interest', yaxis = 'y2') %>%
+  layout(title = 'Primary Result - Net as a % of GDP',
+         xaxis = list(title = ''),
+         yaxis = list(title = '% GDP'),
+         yaxis2 = list(title = '', overlaying = 'y', side = 'right', range = c(1, 4)),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+debt_interest_graf 
+```
 
 ### Open Market
 
