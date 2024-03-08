@@ -330,9 +330,9 @@ housing_price_indexes <- fetch_fred_data(series_ids = housing_price_indexes_ids,
 fiscal_ids <- c("RPONTTLD","RRPONTSYD")
 fiscal <- fetch_fred_data(series_ids = fiscal_ids, freq = "d")
 
-fiscal_ids_2 <- c("WRESBAL","H41RESPPALDKXAWNWW","WTREGEN")
+fiscal_ids_2 <- c("WRESBAL","H41RESPPALDKXAWNWW","WTREGEN","WALCL")
 fiscal_2 <- fetch_fred_data(series_ids = fiscal_ids_2, freq = "w")
-
+fiscal_2$WALCL <- fiscal_2$WALCL/1000
 treasury_statement_m_ids <- c("GFDEGDQ188S","FYOIGDA188S","FYFRGDA188S","FYONGDA188S","FYFSGDA188S")
 treasury_statement_m <- fetch_fred_data(series_ids = treasury_statement_m_ids, freq = "a")
 
@@ -443,7 +443,7 @@ treasury_statement_m_graf
 debt_interest_graf <- plot_ly(treasury_statement_m, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~GFDEGDQ188S, name = 'Debt') %>%
   add_trace(x = ~date, y = ~FYOIGDA188S, name = 'Interest', yaxis = 'y2') %>%
-  layout(title = 'Debt x Interest - Net as a % of GDP',
+  layout(title = 'Debt x Interest as a % of GDP',
          xaxis = list(title = ''),
          yaxis = list(title = '% GDP'),
          yaxis2 = list(title = '', overlaying = 'y', side = 'right', range = c(1, 4)),
@@ -494,10 +494,12 @@ treasury_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
 treasury_graf
 ```
 
-### FED Reserves
+### FED
+
+#### Row {.tabset}
 
 ```{r, include=TRUE, echo = FALSE, warning=FALSE}
-#! title :
+#| title: Reserves
 fed_reserves_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~WRESBAL, name = 'Total') %>%
   layout(title = 'FED Reserves',
@@ -506,6 +508,18 @@ fed_reserves_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
          legend = list(orientation = 'h', x = 0.5, y = -0.2),
          hovermode = 'compare')
 fed_reserves_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
+#| title: Balance Sheet
+fed_balance_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~WALCL, name = 'Total') %>%
+  layout(title = 'FED Balance Sheet',
+         xaxis = list(title = '', range = c(as.Date("2008-10-08"), Sys.Date())),
+         yaxis = list(title = 'Billions'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+fed_balance_graf
 ```
 
 ### BTFP
