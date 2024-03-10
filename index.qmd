@@ -244,6 +244,18 @@ private_payroll_data <- private_payroll_data %>%
             ),
             .cols = 3:ncol(private_payroll_data))
 
+private_payroll_earn_hours_ids <- c("AWHAETP","CES0500000003","CES0500000011")
+private_payroll_earn_hours <- fetch_fred_data(series_ids = private_payroll_earn_hours_ids)
+private_payroll_earn_hours <- private_payroll_earn_hours %>%
+  mutate_at(vars(private_payroll_earn_hours_ids),
+            list(
+              MoM = ~ (./lag(., 1) - 1) * 100,
+              YoY = ~ (./lag(., 12) - 1) * 100,
+              MoM_diff = ~ (.-lag(., 1)),
+              YoY_diff = ~ (.-lag(., 12))
+            ),
+            .cols = 3:ncol(private_payroll_earn_hours))
+
 claims_unemp <- c("ICSA","CCSA","IC4WSA","CC4WSA","IURSA","COVEMP")
 claims_unemp_names <- c("Initial Claims","Continued Claims","MMA of Initial Claims","MMA of Continued Claims","Insured Unemployment Rate","Covered Employment")
 init_cont_claims <- fetch_fred_data(series_ids = claims_unemp, freq = "w")
@@ -654,7 +666,7 @@ payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
                 list(visible = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
                                  FALSE,FALSE,FALSE,FALSE,FALSE,
                                  FALSE,FALSE,FALSE,FALSE,FALSE)),
-                list(title = "Private Payroll, Persons by Firm Size",
+                list(title = "Persons by Firm Size",
                      yaxis = list(title = 'Persons', range = c(-2e6, 1.5e8))))),
           list(
               label = "MoM", method = "update",
@@ -662,7 +674,7 @@ payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
                 list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
                                  TRUE,TRUE,TRUE,TRUE,TRUE,
                                  FALSE,FALSE,FALSE,FALSE,FALSE)),
-                list(title = "Payroll Month Over Month, Persons by Firm Size",
+                list(title = "MoM, Persons by Firm Size",
                      yaxis = list(title = 'Persons', range = c(-2e5, 6e5))))),
           
           list(
@@ -671,12 +683,126 @@ payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
                 list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
                                  FALSE,FALSE,FALSE,FALSE,FALSE,
                                  TRUE,TRUE,TRUE,TRUE,TRUE)),
-                list(title = "Payroll Year over Year, Persons by Firm Size",
+                list(title = "YoY, Persons by Firm Size",
                      yaxis = list(title = 'Persons', range = c(-2e6, 3e6)))))
           ))))
-  
-# Display the subplots
+
 payroll_emp_graf
+```
+
+##### Hours and Earnings
+
+###### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Hours
+private_payroll_hours_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~AWHAETP, name = 'Hours') %>%
+  add_trace(x = ~date, y = ~AWHAETP_MoM_diff, name = 'Hours', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~AWHAETP_YoY_diff, name = 'Hours', visible = FALSE) %>%
+  layout(title = 'Average Weekly Hours',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Hours'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,FALSE,FALSE)),
+                list(title = "Average Weekly Hours"))),
+          list(
+              label = "MoM", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,FALSE)),
+                list(title = "Average Weekly Hours - MoM"))),
+          
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,TRUE)),
+                list(title = "Average Weekly Hours - YoY")))
+          ))))
+
+private_payroll_hours_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Hourly Earnings
+private_payroll_earn_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~CES0500000003, name = 'Weekly Earnings') %>%
+  add_trace(x = ~date, y = ~CES0500000003_MoM, name = 'MoM Change', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~CES0500000003_YoY, name = 'YoY Change', visible = FALSE) %>%
+  layout(title = 'Weekly Earnings',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Earnings'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,FALSE,FALSE)),
+                list(title = "Weekly Earnings",
+                     yaxis = list(title = 'Earnings')))),
+          list(
+              label = "MoM", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,FALSE)),
+                list(title = "MoM Weekly Earnings",
+                     yaxis = list(title = 'Percent')))),
+          
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,TRUE)),
+                list(title = "YoY Weekly Earnings",
+                     yaxis = list(title = 'Percent'))))
+          ))))
+
+private_payroll_earn_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Weekly Earnings
+private_payroll_earn_w_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~CES0500000011, name = 'Weekly Earnings') %>%
+  add_trace(x = ~date, y = ~CES0500000011_MoM, name = 'MoM Change', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~CES0500000011_YoY, name = 'YoY Change', visible = FALSE) %>%
+  layout(title = 'Weekly Earnings',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Earnings'),
+          hovermode = 'compare',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,FALSE,FALSE)),
+                list(title = "Weekly Earnings",
+                     yaxis = list(title = 'Earnings')))),
+          list(
+              label = "MoM", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,FALSE)),
+                list(title = "MoM Weekly Earnings",
+                     yaxis = list(title = 'Percent')))),
+          
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,TRUE)),
+                list(title = "YoY Weekly Earnings",
+                     yaxis = list(title = 'Percent'))))
+          ))))
+
+private_payroll_earn_w_graf
 ```
 
 ### JOLTS
