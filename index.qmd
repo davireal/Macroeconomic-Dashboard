@@ -19,10 +19,21 @@ library(tidyverse)
 library(readxl)
 library(reactable)
 library(lubridate)
+library(quantmod)
+library(leaflet)
 ```
 
 ```{r, include=FALSE, echo = FALSE}
 fredr_set_key("40eca8e40e1e16076ad0da999af9d5eb") 
+```
+
+```{r, include=FALSE, echo = FALSE}
+'world_map <- leaflet() %>%
+  setView(lng = 0, lat = 20, zoom = 0) %>%
+  addTiles() %>%
+  addMarkers(lng = -95.7129, lat = 37.0902, popup = "USA") %>%
+  addMarkers(lng = -51.9253, lat = -14.2350, popup = "BR")
+world_map'
 ```
 
 ```{r, include=FALSE, echo = FALSE}
@@ -46,7 +57,28 @@ fetch_fred_data <- function(series_ids,start_date = "2000-01-03",freq = "m",meas
   colnames(merged_table) <- c("date", series_ids)
   return (merged_table)
 }
+```
 
+```{r, include=FALSE, echo = FALSE}
+#Defining function to import multiple series from yahoo finance
+yfdata <- function(tickers) {
+  stock_env <- new.env()
+  getSymbols(tickers, from = "2000-01-03", to = Sys.Date(), env = stock_env)
+  stock_list <- eapply(stock_env, cbind)
+  stock_df <- do.call(cbind, stock_list)
+  stock_df <- stock_df[, grep("\\.Adjusted$", colnames(stock_df))]
+  return(stock_df)
+}
+```
+
+```{r, include=FALSE, echo = FALSE}
+# calling financial data from yahoo finance
+tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT")
+market_series <- yfdata(tickers)
+'
+fx_tickers <- c("")
+fx_series <- yfdata(fx_tickers)
+'
 #calling nfci data from fred
 series_ids_nfci <- c("ANFCI", "NFCINONFINLEVERAGE", "NFCICREDIT", "NFCILEVERAGE", "NFCIRISK")
 Financial_Conditions <- fetch_fred_data(series_ids = series_ids_nfci,freq = "w")
@@ -101,7 +133,7 @@ Delinquency_Rate <- Delinquency_Rate[, c(col_index, setdiff(1:ncol(Delinquency_R
 col_to_move_x <- "Names"
 col_index_x <- which(colnames(Delinquency_Rate) == col_to_move_x)
 Delinquency_Rate <- Delinquency_Rate[, c(col_index_x, setdiff(1:ncol(Delinquency_Rate), col_index_x))]
-Delinquency_Rate <- Delinquency_Rate[, c(1, 2, (ncol(Delinquency_Rate) - 7):ncol(Delinquency_Rate))]
+Delinquency_Rate <- Delinquency_Rate[, c(1, 2, (ncol(Delinquency_Rate) - 16):ncol(Delinquency_Rate))]
 
 #calling senior loan survey data from fred
 series_ids_sen_loan <- c("DRTSCILM", "DRTSCIS", "DRTSCLCC", "STDSAUTO", "DRTSSP",
@@ -222,7 +254,7 @@ CPI_table_data$Categories <- cpi_table_categories
 CPI_table_data$Names <- cpi_table_names
 col_to_move_cpi <- c("Names","Categories")
 CPI_table_data <- CPI_table_data[, c(col_to_move_cpi, setdiff(names(CPI_table_data), col_to_move_cpi))]
-CPI_table_data <- CPI_table_data[, c(1, 2, (ncol(CPI_table_data) - 12):ncol(CPI_table_data))]
+CPI_table_data <- CPI_table_data[, c(1, 2, (ncol(CPI_table_data) - 48):ncol(CPI_table_data))]
 
 ppi_series_ids <- c("PPIFIS","PPIFES","WPSFD49116")
 PPI <- fetch_fred_data(series_ids = ppi_series_ids)
@@ -265,7 +297,7 @@ colnames(init_cont_claims) <- init_cont_claims_dates
 init_cont_claims$Names <- claims_unemp_names
 col_to_move_init <- "Names"
 init_cont_claims <- init_cont_claims[, c(col_to_move_init, setdiff(names(init_cont_claims), col_to_move_init))]
-init_cont_claims <- init_cont_claims[, c(1, (ncol(init_cont_claims) - 36):ncol(init_cont_claims))]
+init_cont_claims <- init_cont_claims[, c(1, (ncol(init_cont_claims) - 48):ncol(init_cont_claims))]
 
 series_ids_ust <- c("DGS1MO","DGS3MO","DGS6MO","DGS1","DGS2","DGS3","DGS5","DGS7","DGS10","DGS20","DGS30")
 Yield_Curve <- fetch_fred_data(series_ids = series_ids_ust, freq = "d")
@@ -308,7 +340,7 @@ lf_status_flows$Categories <- c("Employed","Employed","Employed","Employed",
                                 "Not in Labor Force","Not in Labor Force","Not in Labor Force","Not in Labor Force")
 col_to_move_lf_status <- "Categories"
 lf_status_flows <- lf_status_flows[, c(col_to_move_lf_status, setdiff(names(lf_status_flows), col_to_move_lf_status))]
-lf_status_flows <- lf_status_flows[, c(1, (ncol(lf_status_flows) - 5):ncol(lf_status_flows))]
+lf_status_flows <- lf_status_flows[, c(1, (ncol(lf_status_flows) - 48):ncol(lf_status_flows))]
 
 unemp_duration_ids <- c("UEMPMEAN","LNU03008276",
                         "LNU03008396","LNU03008756","LNU03008516","LNU03008876","LNU03008636",
@@ -349,7 +381,6 @@ treasury_statement_m_ids <- c("GFDEGDQ188S","FYOIGDA188S","FYFRGDA188S","FYONGDA
 treasury_statement_m <- fetch_fred_data(series_ids = treasury_statement_m_ids, freq = "a")
 
 'treasury_debt_stat <- c("GFDEBTN","FDHBFRBN","FDHBFIN","FYGFDPUN","FDHBPIN","FDHBATN")'
-
 ```
 
 # Monetary Policy
@@ -588,8 +619,6 @@ payroll_graf <- plot_ly(Payroll_Private_Abs, type = 'bar') %>%
               args = list(
                 list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
                 list(title = "Payroll")))))))
-  
-# Display the subplots
 payroll_graf
 ```
 
@@ -626,8 +655,6 @@ payroll_graf_chg <- plot_ly(Payroll_Private_Chg) %>%
               args = list(
                 list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
                 list(title = "Payroll")))))))
-  
-# Display the subplots
 payroll_graf_chg
 ```
 
@@ -686,7 +713,6 @@ payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
                 list(title = "YoY, Persons by Firm Size",
                      yaxis = list(title = 'Persons', range = c(-2e6, 3e6)))))
           ))))
-
 payroll_emp_graf
 ```
 
@@ -725,7 +751,6 @@ private_payroll_hours_graf <- plot_ly(private_payroll_earn_hours, type = 'scatte
                 list(visible = c(TRUE,FALSE,FALSE,TRUE)),
                 list(title = "Average Weekly Hours - YoY")))
           ))))
-
 private_payroll_hours_graf
 ```
 
@@ -925,8 +950,6 @@ mult_jobholders_graf_1 <- plot_ly(mult_jobholders, type = 'scatter', mode='lines
           xaxis = list(title = ''),
           yaxis = list(title = 'Percent'),
           hovermode = 'compare')
-  
-# Display the subplots
 mult_jobholders_graf_1
 ```
 
@@ -951,8 +974,8 @@ reactable(
 #! Labor Force Status Flows
 reactable(
   lf_status_flows,
-  groupBy = "Categories",
-  onClick = "expand",
+  #groupBy = "Categories",
+  #onClick = "expand",
   rowStyle = list(cursor = "pointer"),
   pagination = FALSE,
   highlight = TRUE,
@@ -995,8 +1018,6 @@ unemp_reasons_graf <- plot_ly(unemp_reasons, type = 'bar') %>%
           yaxis = list(title = 'Percent'),
           hovermode = 'compare',
           barmode = 'stack')
-  
-# Display the subplots
 unemp_reasons_graf
 ```
 
@@ -1052,8 +1073,6 @@ unemp_duration_graf <- plot_ly(unemp_duration, type = 'scatter', mode = 'lines')
                 list(title = "Duration of Unemployment as a Percent of Unemployed",
                      yaxis = list(title = 'Percent'))))
           ))))
-  
-# Display the subplots
 unemp_duration_graf
 ```
 
@@ -1106,8 +1125,6 @@ lfpr_graf <- plot_ly(lfpr, type = 'scatter', mode = 'lines') %>%
                 list(title = "Labor Force Participation Rate YoY",
                      yaxis = list(title = 'Percent'))))
           ))))
-  
-# Display the subplots
 lfpr_graf
 ```
 
@@ -1124,8 +1141,6 @@ alt_measures_unemp_graf <- plot_ly(alt_measures_unemp, type = 'scatter', mode = 
           xaxis = list(title = ''),
           yaxis = list(title = 'Percent'),
           hovermode = 'compare')
-  
-# Display the subplots
 alt_measures_unemp_graf
 ```
 
@@ -1191,8 +1206,8 @@ senior_loan_graf
 ```{r, include=TRUE, echo = FALSE}
 reactable(
   Delinquency_Rate,
-  groupBy = "Names",
-  onClick = "expand",
+  #groupBy = "Names",
+  #onClick = "expand",
   rowStyle = list(cursor = "pointer"),
   pagination = FALSE,
   highlight = TRUE,
@@ -1249,15 +1264,10 @@ cpi_graf
 cpi_sticky_graf <- plot_ly(cpi_sticky_pc1, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~STICKCPIM159SFRBATL, name = 'Sticky') %>%
   add_trace(x = ~date, y = ~CORESTICKM159SFRBATL, name = 'Sticky Core') %>%
-  ##add_trace(x = ~date, y = ~CRESTKCPIXSLTRM159SFRBATL, name = 'Sticky Core Less Shelter') %>%
-  #add_trace(x = ~date, y = ~STICKCPIXSHLTRM159SFRBATL, name = 'Sticky Less Shelter') %>%
   add_trace(x = ~date, y = ~FLEXCPIM159SFRBATL, name = 'Flexible') %>%
   add_trace(x = ~date, y = ~COREFLEXCPIM159SFRBATL, name = 'Flexible Core') %>%
-  
   add_trace(x = ~date, y = cpi_sticky_3maa$STICKCPIM679SFRBATL, name = 'Sticky 3M', visible = FALSE) %>%
   add_trace(x = ~date, y = cpi_sticky_3maa$CORESTICKM679SFRBATL, name = 'Sticky Core 3M', visible = FALSE) %>%
-  #add_trace(x = ~date, y = cpi_sticky_3maa$CRESTKCPIXSLTRM679SFRBATL, name = 'Sticky Core Less Shelter 3M', visible = FALSE) %>%
-  #add_trace(x = ~date, y = cpi_sticky_3maa$STICKCPIXSHLTRM679SFRBATL, name = 'Sticky Less Shelter 3M', visible = FALSE) %>%
   add_trace(x = ~date, y = cpi_sticky_3maa$FLEXCPIM679SFRBATL, name = 'Flexible 3M', visible = FALSE) %>%
   add_trace(x = ~date, y = cpi_sticky_3maa$COREFLEXCPIM679SFRBATL, name = 'Flexible Core 3M', visible = FALSE) %>%
   layout(title = '12 Month Alternative CPI Indexes',
@@ -1300,8 +1310,8 @@ cpi_sticky_graf
 #| title: Table
 reactable(
   CPI_table_data,
-  groupBy = "Categories",
-  onClick = "expand",
+  #groupBy = "Categories",
+  #onClick = "expand",
   rowStyle = list(cursor = "pointer"),
   pagination = FALSE,
   highlight = TRUE,
