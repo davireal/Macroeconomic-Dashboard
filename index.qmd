@@ -152,17 +152,30 @@ WAGE_GRO_TRACK <- fredr(
   frequency = "m",
   units = "lin" 
 )
+#calling adp employment data from fred
+series_ids_adp <- c("ADPMNUSNERSA","ADPMINDCONNERSA","ADPMINDEDHLTNERSA","ADPMINDFINNERSA","ADPMINDINFONERSA",
+  "ADPMINDLSHPNERSA","ADPMINDMANNERSA","ADPMINDNRMINNERSA","ADPMINDOTHSRVNERSA",
+  "ADPMINDPROBUSNERSA","ADPMINDTTUNERSA")
 
-#calling payroll change data from fred
-series_ids_payroll <- c("ADPWNUSNERSA", "ADPWINDMANNERSA", "ADPWINDCONNERSA",
-                  "ADPWINDINFONERSA","ADPWINDPROBUSNERSA","ADPWINDLSHPNERSA",
-                  "ADPWINDFINNERSA","ADPWINDEDHLTNERSA","ADPWINDNRMINNERSA","ADPWINDTTUNERSA")
-Payroll_Private_Chg <- fetch_fred_data(series_ids = series_ids_payroll,
+#calling adp change data from fred
+ADP_Chg <- fetch_fred_data(series_ids = series_ids_adp,
 start_date = "2010-01-03",measure = "chg")
 
-#calling payroll absolute data from fred
-Payroll_Private_Abs <- fetch_fred_data(series_ids = series_ids_payroll,
+#calling adp absolute data from fred
+ADP_Abs <- fetch_fred_data(series_ids = series_ids_adp,
 start_date = "2010-01-03")
+
+#calling payroll data from fred
+series_ids_payroll <- c("PAYEMS","USPRIV","USGOOD","SRVPRD","CES0800000001","USTPU","USINFO","USFIRE","USPBS","USEHS","USLAH","USSERV","USGOVT","CES9091000001","CES9092000001","CES9093000001")
+
+#calling payroll change YoY data from fred
+Payroll_Private_Ch1 <- fetch_fred_data(series_ids = series_ids_payroll, measure = "ch1")
+
+#calling payroll change data from fred
+Payroll_Private_Chg <- fetch_fred_data(series_ids = series_ids_payroll, measure = "chg")
+
+#calling payroll absolute data from fred
+Payroll_Private_Abs <- fetch_fred_data(series_ids = series_ids_payroll)
 
 PAYROLL <- fredr(
   series_id = "PAYEMS",
@@ -590,16 +603,21 @@ btfp_graf
 ```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Total
 payroll_graf <- plot_ly(Payroll_Private_Abs, type = 'bar') %>%
-  add_trace(x = ~date, y = ~ADPWNUSNERSA, name = 'Total Private', type = 'scatter', mode = 'lines') %>%
-  add_bars(x = ~date, y = ~ADPWINDMANNERSA, name = 'Manufacturing', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDCONNERSA, name = 'Construction', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDINFONERSA, name = 'Information', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDPROBUSNERSA, name = 'Services', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Health', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDFINNERSA, name = 'Financial', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDNRMINNERSA, name = 'Mining', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDTTUNERSA, name = 'Trade', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Leisure and Hospitality', visible = FALSE) %>% 
+  add_trace(x = ~date, y = ~PAYEMS, name = 'Total', type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~USPRIV, name = 'Private', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~USGOOD, name = 'Goods', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES0800000001, name = 'Services', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USTPU, name = 'Trade, Transportation and Utilities', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USINFO, name = 'Information', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USFIRE, name = 'Financial', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USPBS, name = 'Professional and Business', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USEHS, name = 'Private Education and Health', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USLAH, name = 'Leisure and Hospitality', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USSERV, name = 'Other Services', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~USGOVT, name = 'Government', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~CES9091000001, name = 'Federal Government', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES9092000001, name = 'State Government', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES9093000001, name = 'Local Government', visible = FALSE) %>%
   layout(title = 'Payroll',
           xaxis = list(title = ''),
           yaxis = list(title = 'Persons'),
@@ -610,35 +628,62 @@ payroll_graf <- plot_ly(Payroll_Private_Abs, type = 'bar') %>%
           type = "buttons",
           buttons = list(
           list(
-              label = "Breakdown", method = "update",
-              args = list(
-                list(visible = c(TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)),
-                list(title = "Private Payroll Breakdown"))),
-          list(
               label = "Total", method = "update",
               args = list(
-                list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
-                list(title = "Payroll")))))))
+                list(visible = c(TRUE,TRUE,TRUE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,TRUE,FALSE,FALSE,
+                                 FALSE,FALSE)),
+                list(title = "Payroll Overview"))),
+          list(
+              label = "1º Break", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE)),
+                list(title = "Private Payroll Breakdown"))),
+          list(
+              label = "2º Break", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 TRUE,TRUE,FALSE,FALSE,FALSE,
+                                 FALSE)),
+                list(title = "Private Payroll Detailed"))),
+          list(
+              label = "Gov", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,TRUE,TRUE,TRUE,
+                                 TRUE)),
+                list(title = "Government Payroll")))          
+          ))))
 payroll_graf
 ```
 
 ```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Change
-payroll_graf_chg <- plot_ly(Payroll_Private_Chg) %>%
-  add_trace(x = ~date, y = ~ADPWNUSNERSA, name = 'Total Private', type = 'scatter', mode = 'lines') %>%
-  add_trace(x = PAYROLL$date, y = PAYROLL$value, name = 'Total', type = 'scatter', mode = 'lines') %>%
-  add_bars(x = ~date, y = ~ADPWINDMANNERSA, name = 'Manufacturing', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDCONNERSA, name = 'Construction', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDINFONERSA, name = 'Information', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDPROBUSNERSA, name = 'Services', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Health', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDFINNERSA, name = 'Financial', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDNRMINNERSA, name = 'Mining', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDTTUNERSA, name = 'Trade', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPWINDLSHPNERSA, name = 'Leisure and Hospitality', visible = FALSE) %>% 
-  layout(title = 'Payroll',
+payroll_chg_graf <- plot_ly(Payroll_Private_Chg, type = 'bar') %>%
+  add_trace(x = ~date, y = ~PAYEMS, name = 'Total', type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~USPRIV, name = 'Private', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~USGOOD, name = 'Goods', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES0800000001, name = 'Services', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USTPU, name = 'Trade, Transportation and Utilities', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USINFO, name = 'Information', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USFIRE, name = 'Financial', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USPBS, name = 'Professional and Business', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USEHS, name = 'Private Education and Health', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USLAH, name = 'Leisure and Hospitality', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USSERV, name = 'Other Services', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~USGOVT, name = 'Government', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~CES9091000001, name = 'Federal Government', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES9092000001, name = 'State Government', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES9093000001, name = 'Local Government', visible = FALSE) %>%
+  layout(title = 'Payroll Change Overview',
           xaxis = list(title = ''),
-          yaxis = list(title = 'Persons', range = c(-2e5, 1e6)),
+          yaxis = list(title = 'Thousands of Persons', range = c(-5e3, 5e3)),
           hovermode = 'compare',
           barmode = 'stack',
           updatemenus = list(list(
@@ -646,41 +691,66 @@ payroll_graf_chg <- plot_ly(Payroll_Private_Chg) %>%
           type = "buttons",
           buttons = list(
           list(
-              label = "Breakdown", method = "update",
-              args = list(
-                list(visible = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)),
-                list(title = "Private Payroll Breakdown"))),
-          list(
               label = "Total", method = "update",
               args = list(
-                list(visible = c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
-                list(title = "Payroll")))))))
-payroll_graf_chg
+                list(visible = c(TRUE,TRUE,TRUE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,TRUE,FALSE,FALSE,
+                                 FALSE,FALSE)),
+                list(title = "Payroll Change Overview",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-5e3, 5e3))))),
+          list(
+              label = "1º Break", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE)),
+                list(title = "Private Payroll Change Breakdown",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-1e3, 2e3))))),
+          list(
+              label = "2º Break", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 TRUE,TRUE,FALSE,FALSE,FALSE,
+                                 FALSE)),
+                list(title = "Private Payroll Change Detailed",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-1e3, 2e3))))),
+          list(
+              label = "Gov", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,TRUE,TRUE,TRUE,
+                                 TRUE)),
+                list(title = "Government Payroll Change",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-5e2, 5e2)))))          
+          ))))
+payroll_chg_graf
 ```
 
 ```{r, include=TRUE, echo = FALSE, warning = FALSE}
-#| title: Employee Number
-payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
-  add_bars(x = ~date, y = ~ADPMES1T19ENERSA, name = 'Small 1-19') %>%
-  add_bars(x = ~date, y = ~ADPMES20T49ENERSA, name = 'Small 20-49') %>%
-  add_bars(x = ~date, y = ~ADPMES50T249ENERSA, name = 'Medium 50-249') %>%
-  add_bars(x = ~date, y = ~ADPMES250T499ENERSA, name = 'Medium 250-499') %>%
-  add_bars(x = ~date, y = ~ADPMES500PENERSA, name = 'Large 500+') %>%
-  
-  add_bars(x = ~date, y = ~ADPMES1T19ENERSA_MoM, name = 'Small 1-19', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPMES20T49ENERSA_MoM, name = 'Small 20-49', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPMES50T249ENERSA_MoM, name = 'Medium 50-249', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPMES250T499ENERSA_MoM, name = 'Medium 250-499', visible = FALSE) %>%
-  add_bars(x = ~date, y = ~ADPMES500PENERSA_MoM, name = 'Large 500+', visible = FALSE) %>%
-  
-  add_trace(x = ~date, y = ~ADPMES1T19ENERSA_YoY, name = 'Small 1-19', visible = FALSE, type = 'scatter', mode = 'lines') %>%
-  add_trace(x = ~date, y = ~ADPMES20T49ENERSA_YoY, name = 'Small 20-49', visible = FALSE, type = 'scatter', mode = 'lines') %>%
-  add_trace(x = ~date, y = ~ADPMES50T249ENERSA_YoY, name = 'Medium 50-249', visible = FALSE, type = 'scatter', mode = 'lines') %>%
-  add_trace(x = ~date, y = ~ADPMES250T499ENERSA_YoY, name = 'Medium 250-499', visible = FALSE, type = 'scatter', mode = 'lines') %>%
-  add_trace(x = ~date, y = ~ADPMES500PENERSA_YoY, name = 'Large 500+', visible = FALSE, type = 'scatter', mode = 'lines') %>%
-  layout(title = 'Private Payroll, Persons by Firm Size',
+#| title: YoY
+payroll_chg_graf <- plot_ly(Payroll_Private_Ch1, type = 'bar') %>%
+  add_trace(x = ~date, y = ~PAYEMS, name = 'Total', type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~USPRIV, name = 'Private', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~USGOOD, name = 'Goods', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES0800000001, name = 'Services', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USTPU, name = 'Trade, Transportation and Utilities', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USINFO, name = 'Information', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USFIRE, name = 'Financial', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USPBS, name = 'Professional and Business', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USEHS, name = 'Private Education and Health', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USLAH, name = 'Leisure and Hospitality', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~USSERV, name = 'Other Services', visible = FALSE) %>%
+  add_trace(x = ~date, y = ~USGOVT, name = 'Government', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~CES9091000001, name = 'Federal Government', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES9092000001, name = 'State Government', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~CES9093000001, name = 'Local Government', visible = FALSE) %>%
+  layout(title = 'Payroll Change Overview YoY',
           xaxis = list(title = ''),
-          yaxis = list(title = 'Persons'),
+          yaxis = list(title = 'Thousands of Persons', range = c(-2e4, 1.5e4)),
           hovermode = 'compare',
           barmode = 'stack',
           updatemenus = list(list(
@@ -690,30 +760,41 @@ payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
           list(
               label = "Total", method = "update",
               args = list(
-                list(visible = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+                list(visible = c(TRUE,TRUE,TRUE,FALSE,FALSE,
                                  FALSE,FALSE,FALSE,FALSE,FALSE,
-                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
-                list(title = "Persons by Firm Size",
-                     yaxis = list(title = 'Persons', range = c(-2e6, 1.5e8))))),
+                                 FALSE,FALSE,TRUE,FALSE,FALSE,
+                                 FALSE,FALSE)),
+                list(title = "Payroll Change Overview YoY",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-2e4, 1.5e4))))),
           list(
-              label = "MoM", method = "update",
+              label = "1º Break", method = "update",
               args = list(
-                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE)),
+                list(title = "Private Payroll Change Breakdown YoY",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-1e4, 1.5e4))))),
+          list(
+              label = "2º Break", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,TRUE,TRUE,FALSE,
                                  TRUE,TRUE,TRUE,TRUE,TRUE,
-                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
-                list(title = "MoM, Persons by Firm Size",
-                     yaxis = list(title = 'Persons', range = c(-2e5, 6e5))))),
-          
+                                 TRUE,TRUE,FALSE,FALSE,FALSE,
+                                 FALSE)),
+                list(title = "Private Payroll Change Detailed YoY",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-1e4, 1.5e4))))),
           list(
-              label = "YoY", method = "update",
+              label = "Gov", method = "update",
               args = list(
-                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,
                                  FALSE,FALSE,FALSE,FALSE,FALSE,
-                                 TRUE,TRUE,TRUE,TRUE,TRUE)),
-                list(title = "YoY, Persons by Firm Size",
-                     yaxis = list(title = 'Persons', range = c(-2e6, 3e6)))))
+                                 FALSE,FALSE,TRUE,TRUE,TRUE,
+                                 TRUE)),
+                list(title = "Government Payroll Change YoY",
+                     yaxis = list(title = 'Thousands of Persons',range = c(-1.5e3, 1e3)))))          
           ))))
-payroll_emp_graf
+payroll_chg_graf
 ```
 
 ##### Hours and Earnings
@@ -828,6 +909,112 @@ private_payroll_earn_w_graf <- plot_ly(private_payroll_earn_hours, type = 'scatt
           ))))
 
 private_payroll_earn_w_graf
+```
+
+### ADP
+
+#### Row {.tabset}
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Total
+adp_abs_graf <- plot_ly(ADP_Abs, type = 'bar') %>%
+  add_trace(x = ~date, y = ~ADPMNUSNERSA, name = 'Total', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~ADPMINDCONNERSA, name = 'Construction') %>%
+  add_bars(x = ~date, y = ~ADPMINDEDHLTNERSA, name = 'Education and Health') %>%
+  add_bars(x = ~date, y = ~ADPMINDFINNERSA, name = 'Financial') %>%
+  add_bars(x = ~date, y = ~ADPMINDINFONERSA, name = 'Information') %>%
+  add_bars(x = ~date, y = ~ADPMINDLSHPNERSA, name = 'Leisure and Hospitality') %>%
+  add_bars(x = ~date, y = ~ADPMINDMANNERSA, name = 'Manufacturing') %>%
+  add_bars(x = ~date, y = ~ADPMINDNRMINNERSA, name = 'Mining') %>%
+  add_bars(x = ~date, y = ~ADPMINDOTHSRVNERSA, name = 'Other Services') %>%
+  add_bars(x = ~date, y = ~ADPMINDPROBUSNERSA, name = 'Professional and Business') %>%
+  add_bars(x = ~date, y = ~ADPMINDTTUNERSA, name = 'Trade, Transportation and Utilities') %>%
+  layout(title = 'ADP',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons'),
+          hovermode = 'compare',
+          barmode = 'stack')
+adp_abs_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Change
+adp_chg_graf <- plot_ly(ADP_Chg, type = 'bar') %>%
+  add_trace(x = ~date, y = ~ADPMNUSNERSA, name = 'Total', type = 'scatter', mode = 'lines') %>%
+  add_bars(x = ~date, y = ~ADPMINDCONNERSA, name = 'Construction') %>%
+  add_bars(x = ~date, y = ~ADPMINDEDHLTNERSA, name = 'Education and Health') %>%
+  add_bars(x = ~date, y = ~ADPMINDFINNERSA, name = 'Financial') %>%
+  add_bars(x = ~date, y = ~ADPMINDINFONERSA, name = 'Information') %>%
+  add_bars(x = ~date, y = ~ADPMINDLSHPNERSA, name = 'Leisure and Hospitality') %>%
+  add_bars(x = ~date, y = ~ADPMINDMANNERSA, name = 'Manufacturing') %>%
+  add_bars(x = ~date, y = ~ADPMINDNRMINNERSA, name = 'Mining') %>%
+  add_bars(x = ~date, y = ~ADPMINDOTHSRVNERSA, name = 'Other Services') %>%
+  add_bars(x = ~date, y = ~ADPMINDPROBUSNERSA, name = 'Professional and Business') %>%
+  add_bars(x = ~date, y = ~ADPMINDTTUNERSA, name = 'Trade, Transportation and Utilities') %>%
+  layout(title = 'ADP Change',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons', range = c(-5e5, 1.5e6)),
+          hovermode = 'compare',
+          barmode = 'stack')
+adp_chg_graf
+```
+
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
+#| title: Employee Number
+payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
+  add_bars(x = ~date, y = ~ADPMES1T19ENERSA, name = 'Small 1-19') %>%
+  add_bars(x = ~date, y = ~ADPMES20T49ENERSA, name = 'Small 20-49') %>%
+  add_bars(x = ~date, y = ~ADPMES50T249ENERSA, name = 'Medium 50-249') %>%
+  add_bars(x = ~date, y = ~ADPMES250T499ENERSA, name = 'Medium 250-499') %>%
+  add_bars(x = ~date, y = ~ADPMES500PENERSA, name = 'Large 500+') %>%
+  
+  add_bars(x = ~date, y = ~ADPMES1T19ENERSA_MoM, name = 'Small 1-19', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES20T49ENERSA_MoM, name = 'Small 20-49', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES50T249ENERSA_MoM, name = 'Medium 50-249', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES250T499ENERSA_MoM, name = 'Medium 250-499', visible = FALSE) %>%
+  add_bars(x = ~date, y = ~ADPMES500PENERSA_MoM, name = 'Large 500+', visible = FALSE) %>%
+  
+  add_trace(x = ~date, y = ~ADPMES1T19ENERSA_YoY, name = 'Small 1-19', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES20T49ENERSA_YoY, name = 'Small 20-49', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES50T249ENERSA_YoY, name = 'Medium 50-249', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES250T499ENERSA_YoY, name = 'Medium 250-499', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = ~date, y = ~ADPMES500PENERSA_YoY, name = 'Large 500+', visible = FALSE, type = 'scatter', mode = 'lines') %>%
+  layout(title = 'Private Payroll, Persons by Firm Size',
+          xaxis = list(title = ''),
+          yaxis = list(title = 'Persons'),
+          hovermode = 'compare',
+          barmode = 'stack',
+          updatemenus = list(list(
+          active = -1,
+          type = "buttons",
+          buttons = list(
+          list(
+              label = "Total", method = "update",
+              args = list(
+                list(visible = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "Persons by Firm Size",
+                     yaxis = list(title = 'Persons', range = c(-2e6, 1.5e8))))),
+          list(
+              label = "MoM", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,TRUE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE)),
+                list(title = "MoM, Persons by Firm Size",
+                     yaxis = list(title = 'Persons', range = c(-2e5, 6e5))))),
+          
+          list(
+              label = "YoY", method = "update",
+              args = list(
+                list(visible = c(TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 FALSE,FALSE,FALSE,FALSE,FALSE,
+                                 TRUE,TRUE,TRUE,TRUE,TRUE)),
+                list(title = "YoY, Persons by Firm Size",
+                     yaxis = list(title = 'Persons', range = c(-2e6, 3e6)))))
+          ))))
+payroll_emp_graf
 ```
 
 ### JOLTS
