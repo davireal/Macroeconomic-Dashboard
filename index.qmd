@@ -1,6 +1,6 @@
 ---
-title: "US Macroeconomic Dashboard"
-format: 
+title: "United States"
+format:
   dashboard
 ---
 
@@ -9,7 +9,6 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r, include=FALSE, echo = FALSE}
-# Data Source: [FRED St. Louis](https://fred.stlouisfed.org/)
 library(httr)
 library(fredr)
 library(dplyr)
@@ -25,15 +24,6 @@ library(leaflet)
 
 ```{r, include=FALSE, echo = FALSE}
 fredr_set_key("40eca8e40e1e16076ad0da999af9d5eb") 
-```
-
-```{r, include=FALSE, echo = FALSE}
-'world_map <- leaflet() %>%
-  setView(lng = 0, lat = 20, zoom = 0) %>%
-  addTiles() %>%
-  addMarkers(lng = -95.7129, lat = 37.0902, popup = "USA") %>%
-  addMarkers(lng = -51.9253, lat = -14.2350, popup = "BR")
-world_map'
 ```
 
 ```{r, include=FALSE, echo = FALSE}
@@ -73,9 +63,9 @@ yfdata <- function(tickers) {
 
 ```{r, include=FALSE, echo = FALSE}
 # calling financial data from yahoo finance
-tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT")
+'tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT")
 market_series <- yfdata(tickers)
-'
+
 fx_tickers <- c("")
 fx_series <- yfdata(fx_tickers)
 '
@@ -1263,7 +1253,7 @@ unemp_duration_graf <- plot_ly(unemp_duration, type = 'scatter', mode = 'lines')
 unemp_duration_graf
 ```
 
-### Measures on Labor Subutilization
+### Labor Subutilization
 
 #### Row {.tabset}
 

@@ -1,7 +1,15 @@
 project:
   type: website
-  output-dir: docs
+  output-dir: docs   
 
+website: 
+  title: "Macroeconomic Dashboard"
+  page-footer:
+    left: 
+      - text: "US"
+        href: index.qmd
+      - text: "Market"
+        href: market_data.qmd
+        
 format:
   dashboard
-

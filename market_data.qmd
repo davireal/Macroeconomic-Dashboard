@@ -1,0 +1,448 @@
+---
+title: "Market Data"
+format: 
+  dashboard
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, include=FALSE, echo = FALSE}
+library(httr)
+library(fredr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+library(readxl)
+library(reactable)
+library(lubridate)
+library(quantmod)
+library(leaflet)
+```
+
+```{r, include=FALSE, echo = FALSE}
+#Defining function to import multiple series from yahoo finance
+yfdata <- function(tickers) {
+  env <- new.env()
+  getSymbols(tickers, from = "2000-01-03", to = Sys.Date(), env = env)
+  series_list <- eapply(env, cbind)
+  env_xts <- do.call(cbind, series_list)
+  env_xts <- env_xts[, grep("\\.Adjusted$", colnames(env_xts))]
+  result_df <- as.data.frame(env_xts)
+  result_df$Date <- index(env_xts)
+  return(result_df)
+}
+```
+
+```{r, include=FALSE, echo = FALSE,warning=FALSE}
+#calling financial data from yahoo finance
+tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT")
+market_data <- yfdata(tickers)
+
+#calling commodities data from yf
+series_commodities <- c("GC=F","SI=F","PL=F","HG=F","PA=F",
+"CL=F","HO=F","NG=F","RB=F","BZ=F","BO=F",
+"ZC=F","ZO=F","KE=F","ZR=F","ZL=F","ZS=F","HE=F","LE=F","CC=F","KC=F","CT=F","LBS=F","OJ=F","SB=F"
+)
+commodities_price <- yfdata(series_commodities)
+date_com <- commodities_price$Date
+commodities_price <- commodities_price[,!grepl("*Date",names(commodities_price))]
+commodities_price <- commodities_price %>%
+  mutate_at(vars(colnames(commodities_price)),
+            list(
+              MoM = ~ (./lag(., 22) - 1) * 100,
+              YoY = ~ (./lag(., 252) - 1) * 100
+            ),
+            .cols = 3:ncol(commodities_price))
+```
+
+# Equity
+
+## Column {.tabset}
+
+### United States
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~GC.F.Adjusted, name = 'Gold') %>%
+  add_trace(x = date_com, y = ~SI.F.Adjusted, name = 'Silver') %>%
+  add_trace(x = date_com, y = ~PL.F.Adjusted, name = 'Platinum') %>%
+  add_trace(x = date_com, y = ~HG.F.Adjusted, name = 'Copper') %>%
+  add_trace(x = date_com, y = ~PA.F.Adjusted, name = 'Palladium') %>%
+  layout(title = 'Commodities Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_metalics
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Performance
+'reactable(
+  commodities_price,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE
+)
+'
+```
+
+### Brazil
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~GC.F.Adjusted, name = 'Gold') %>%
+  add_trace(x = date_com, y = ~SI.F.Adjusted, name = 'Silver') %>%
+  add_trace(x = date_com, y = ~PL.F.Adjusted, name = 'Platinum') %>%
+  add_trace(x = date_com, y = ~HG.F.Adjusted, name = 'Copper') %>%
+  add_trace(x = date_com, y = ~PA.F.Adjusted, name = 'Palladium') %>%
+  layout(title = 'Commodities Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_metalics
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Performance
+'reactable(
+  commodities_price,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE
+)
+'
+```
+
+# Govt. Bonds
+
+
+
+# Bonds
+
+
+
+# Commodities
+
+## Column {.tabset}
+
+### Metalics
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~GC.F.Adjusted, name = 'Gold') %>%
+  add_trace(x = date_com, y = ~SI.F.Adjusted, name = 'Silver') %>%
+  add_trace(x = date_com, y = ~PL.F.Adjusted, name = 'Platinum') %>%
+  add_trace(x = date_com, y = ~HG.F.Adjusted, name = 'Copper') %>%
+  add_trace(x = date_com, y = ~PA.F.Adjusted, name = 'Palladium') %>%
+  layout(title = 'Commodities Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_metalics
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change MoM
+plot_com_prices_mom_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~GC.F.Adjusted_MoM, name = 'Gold') %>%
+  add_trace(x = date_com, y = ~SI.F.Adjusted_MoM, name = 'Silver') %>%
+  add_trace(x = date_com, y = ~PL.F.Adjusted_MoM, name = 'Platinum') %>%
+  add_trace(x = date_com, y = ~HG.F.Adjusted_MoM, name = 'Copper') %>%
+  add_trace(x = date_com, y = ~PA.F.Adjusted_MoM, name = 'Palladium') %>%
+  layout(title = 'Commodities Price Change MoM',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_mom_metalics
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_com_prices_yoy_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~GC.F.Adjusted_YoY, name = 'Gold') %>%
+  add_trace(x = date_com, y = ~SI.F.Adjusted_YoY, name = 'Silver') %>%
+  add_trace(x = date_com, y = ~PL.F.Adjusted_YoY, name = 'Platinum') %>%
+  add_trace(x = date_com, y = ~HG.F.Adjusted_YoY, name = 'Copper') %>%
+  add_trace(x = date_com, y = ~PA.F.Adjusted_YoY, name = 'Palladium') %>%
+  layout(title = 'Commodities Price Change YoY',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_yoy_metalics
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Performance
+'reactable(
+  commodities_price,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE
+)
+'
+```
+
+### Petroleum Derivatives
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_com_prices_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~CL.F.Adjusted, name = 'Crude Oil') %>%
+  add_trace(x = date_com, y = ~HO.F.Adjusted, name = 'Heating Oil') %>%
+  add_trace(x = date_com, y = ~NG.F.Adjusted, name = 'Natural Gas') %>%
+  add_trace(x = date_com, y = ~RB.F.Adjusted, name = 'Gasoline') %>%
+  add_trace(x = date_com, y = ~BZ.F.Adjusted, name = 'Brent') %>%
+  layout(title = 'Commodities Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_pet
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change MoM
+plot_com_prices_mom_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~CL.F.Adjusted_MoM, name = 'Crude Oil') %>%
+  add_trace(x = date_com, y = ~HO.F.Adjusted_MoM, name = 'Heating Oil') %>%
+  add_trace(x = date_com, y = ~NG.F.Adjusted_MoM, name = 'Natural Gas') %>%
+  add_trace(x = date_com, y = ~RB.F.Adjusted_MoM, name = 'Gasoline') %>%
+  add_trace(x = date_com, y = ~BZ.F.Adjusted_MoM, name = 'Brent') %>%
+  layout(title = 'Commodities Price Change MoM',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_mom_pet
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_com_prices_yoy_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~CL.F.Adjusted_YoY, name = 'Crude Oil') %>%
+  add_trace(x = date_com, y = ~HO.F.Adjusted_YoY, name = 'Heating Oil') %>%
+  add_trace(x = date_com, y = ~NG.F.Adjusted_YoY, name = 'Natural Gas') %>%
+  add_trace(x = date_com, y = ~RB.F.Adjusted_YoY, name = 'Gasoline') %>%
+  add_trace(x = date_com, y = ~BZ.F.Adjusted_YoY, name = 'Brent') %>%
+  layout(title = 'Commodities Price Change YoY',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_yoy_pet
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Performance
+'reactable(
+  commodities_price,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE
+)
+'
+```
+
+### Grain and Livestock
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_com_prices_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~ZC.F.Adjusted, name = 'Corn') %>%
+  add_trace(x = date_com, y = ~ZO.F.Adjusted, name = 'Oat') %>%
+  add_trace(x = date_com, y = ~KE.F.Adjusted, name = 'Wheat') %>%
+  add_trace(x = date_com, y = ~ZR.F.Adjusted, name = 'Rice') %>%
+  add_trace(x = date_com, y = ~ZL.F.Adjusted, name = 'Soybean Oil') %>%
+  add_trace(x = date_com, y = ~ZS.F.Adjusted, name = 'Soybean') %>%
+  add_trace(x = date_com, y = ~HE.F.Adjusted, name = 'Hogs') %>%
+  add_trace(x = date_com, y = ~LE.F.Adjusted, name = 'Cattle') %>%
+  add_trace(x = date_com, y = ~CC.F.Adjusted, name = 'Cocoa') %>%
+  add_trace(x = date_com, y = ~KC.F.Adjusted, name = 'Coffee') %>%
+  add_trace(x = date_com, y = ~CT.F.Adjusted, name = 'Cotton') %>%
+  add_trace(x = date_com, y = ~LBS.F.Adjusted, name = 'Lumber') %>%
+  add_trace(x = date_com, y = ~OJ.F.Adjusted, name = 'Orange Juice') %>%
+  add_trace(x = date_com, y = ~SB.F.Adjusted, name = 'Sugar') %>%
+  layout(title = 'Commodities Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_agri
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change MoM
+plot_com_prices_mom_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~ZC.F.Adjusted_MoM, name = 'Corn') %>%
+  add_trace(x = date_com, y = ~ZO.F.Adjusted_MoM, name = 'Oat') %>%
+  add_trace(x = date_com, y = ~KE.F.Adjusted_MoM, name = 'Wheat') %>%
+  add_trace(x = date_com, y = ~ZR.F.Adjusted_MoM, name = 'Rice') %>%
+  add_trace(x = date_com, y = ~ZL.F.Adjusted_MoM, name = 'Soybean Oil') %>%
+  add_trace(x = date_com, y = ~ZS.F.Adjusted_MoM, name = 'Soybean') %>%
+  add_trace(x = date_com, y = ~HE.F.Adjusted_MoM, name = 'Hogs') %>%
+  add_trace(x = date_com, y = ~LE.F.Adjusted_MoM, name = 'Cattle') %>%
+  add_trace(x = date_com, y = ~CC.F.Adjusted_MoM, name = 'Cocoa') %>%
+  add_trace(x = date_com, y = ~KC.F.Adjusted_MoM, name = 'Coffee') %>%
+  add_trace(x = date_com, y = ~CT.F.Adjusted_MoM, name = 'Cotton') %>%
+  add_trace(x = date_com, y = ~LBS.F.Adjusted_MoM, name = 'Lumber') %>%
+  add_trace(x = date_com, y = ~OJ.F.Adjusted_MoM, name = 'Orange Juice') %>%
+  add_trace(x = date_com, y = ~SB.F.Adjusted_MoM, name = 'Sugar') %>%
+  layout(title = 'Commodities Price Change MoM',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_mom_agri
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_com_prices_yoy_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_com, y = ~ZC.F.Adjusted_YoY, name = 'Corn') %>%
+  add_trace(x = date_com, y = ~ZO.F.Adjusted_YoY, name = 'Oat') %>%
+  add_trace(x = date_com, y = ~KE.F.Adjusted_YoY, name = 'Wheat') %>%
+  add_trace(x = date_com, y = ~ZR.F.Adjusted_YoY, name = 'Rice') %>%
+  add_trace(x = date_com, y = ~ZL.F.Adjusted_YoY, name = 'Soybean Oil') %>%
+  add_trace(x = date_com, y = ~ZS.F.Adjusted_YoY, name = 'Soybean') %>%
+  add_trace(x = date_com, y = ~HE.F.Adjusted_YoY, name = 'Hogs') %>%
+  add_trace(x = date_com, y = ~LE.F.Adjusted_YoY, name = 'Cattle') %>%
+  add_trace(x = date_com, y = ~CC.F.Adjusted_YoY, name = 'Cocoa') %>%
+  add_trace(x = date_com, y = ~KC.F.Adjusted_YoY, name = 'Coffee') %>%
+  add_trace(x = date_com, y = ~CT.F.Adjusted_YoY, name = 'Cotton') %>%
+  add_trace(x = date_com, y = ~LBS.F.Adjusted_YoY, name = 'Lumber') %>%
+  add_trace(x = date_com, y = ~OJ.F.Adjusted_YoY, name = 'Orange Juice') %>%
+  add_trace(x = date_com, y = ~SB.F.Adjusted_YoY, name = 'Sugar') %>%
+  layout(title = 'Commodities Price Change YoY',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Percent'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_com_prices_yoy_agri
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Performance
+'reactable(
+  commodities_price,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE
+)
+'
+```
+
+# Currencies
