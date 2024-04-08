@@ -1106,7 +1106,7 @@ joined_plot
 QUITS_RATE_graf <- plot_ly(Jolts, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~JTSQUR, name = 'Quits Rate', type = 'scatter', mode = 'lines', yaxis = 'y2') %>%
   add_trace(x = WAGE_GRO_TRACK$date, y = WAGE_GRO_TRACK$value, name = 'Wage Growth Tracker', type = 'scatter', mode = 'lines') %>%
-  layout(title = 'Quits Rate x Wage Growth Tracker',
+  layout(title = 'Quits Rate (right) x Wage Growth Tracker (left)',
          xaxis = list(title = ''),
          yaxis = list(title = ''),
          yaxis2 = list(title = '', overlaying = 'y', side = 'right'),

@@ -38,11 +38,21 @@ yfdata <- function(tickers) {
 
 ```{r, include=FALSE, echo = FALSE,warning=FALSE}
 #calling financial data from yahoo finance
-tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT")
+tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT","^BVSP","SMAL11.SA","IMAB11.SA","B5P211.SA","IB5M11.SA")
 market_data <- yfdata(tickers)
+date_mkt <- market_data$Date
+market_data <- market_data[,!grepl("*Date",names(market_data))]
+market_data <- market_data %>%
+  mutate_at(vars(colnames(market_data)),
+            list(
+              MoM = ~ (./lag(., 22) - 1) * 100,
+              YoY = ~ (./lag(., 252) - 1) * 100
+            ),
+            .cols = 3:ncol(market_data))
+
 
 #calling commodities data from yf
-series_commodities <- c("GC=F","SI=F","PL=F","HG=F","PA=F",
+series_commodities <- c("GC=F","SI=F","PL=F","HG=F","PA=F","TIO=F",
 "CL=F","HO=F","NG=F","RB=F","BZ=F","BO=F",
 "ZC=F","ZO=F","KE=F","ZR=F","ZL=F","ZS=F","HE=F","LE=F","CC=F","KC=F","CT=F","LBS=F","OJ=F","SB=F"
 )
@@ -68,13 +78,12 @@ commodities_price <- commodities_price %>%
 
 ```{r, include=TRUE, echo = FALSE}
 #| title: Price
-plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
-  add_trace(x = date_com, y = ~GC.F.Adjusted, name = 'Gold') %>%
-  add_trace(x = date_com, y = ~SI.F.Adjusted, name = 'Silver') %>%
-  add_trace(x = date_com, y = ~PL.F.Adjusted, name = 'Platinum') %>%
-  add_trace(x = date_com, y = ~HG.F.Adjusted, name = 'Copper') %>%
-  add_trace(x = date_com, y = ~PA.F.Adjusted, name = 'Palladium') %>%
-  layout(title = 'Commodities Price Chart',
+plot_eqt_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~GSPC.Adjusted, name = 'S&P500') %>%
+  add_trace(x = date_mkt, y = ~DJI.Adjusted, name = 'Dow Jones') %>%
+  add_trace(x = date_mkt, y = ~IXIC.Adjusted, name = 'Nasdaq') %>%
+  add_trace(x = date_mkt, y = ~RUT.Adjusted, name = 'Russel 2000') %>%
+  layout(title = 'Equity Price Chart',
          xaxis = list(title = 'Date',
               rangeselector = list(
                 buttons = list(
@@ -87,19 +96,53 @@ plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 
          yaxis = list(title = 'Price'),
          legend = list(orientation = 'h', x = 0.5, y = -0.2),
          hovermode = 'compare')
-plot_com_prices_metalics
+plot_eqt_prices
 ```
 
 ```{r, include=TRUE, echo = FALSE}
-#| title: Performance
-'reactable(
-  commodities_price,
-  rowStyle = list(cursor = "pointer"),
-  pagination = FALSE,
-  highlight = TRUE,
-  striped = TRUE
-)
-'
+#| title: Change MoM
+plot_eqt_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~GSPC.Adjusted_MoM, name = 'S&P500') %>%
+  add_trace(x = date_mkt, y = ~DJI.Adjusted_MoM, name = 'Dow Jones') %>%
+  add_trace(x = date_mkt, y = ~IXIC.Adjusted_MoM, name = 'Nasdaq') %>%
+  add_trace(x = date_mkt, y = ~RUT.Adjusted_MoM, name = 'Russel 2000') %>%
+  layout(title = 'Equity Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_eqt_mom_prices
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_eqt_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~GSPC.Adjusted_YoY, name = 'S&P500') %>%
+  add_trace(x = date_mkt, y = ~DJI.Adjusted_YoY, name = 'Dow Jones') %>%
+  add_trace(x = date_mkt, y = ~IXIC.Adjusted_YoY, name = 'Nasdaq') %>%
+  add_trace(x = date_mkt, y = ~RUT.Adjusted_YoY, name = 'Russel 2000') %>%
+  layout(title = 'Equity Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_eqt_yoy_prices
 ```
 
 ### Brazil
@@ -108,13 +151,10 @@ plot_com_prices_metalics
 
 ```{r, include=TRUE, echo = FALSE}
 #| title: Price
-plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
-  add_trace(x = date_com, y = ~GC.F.Adjusted, name = 'Gold') %>%
-  add_trace(x = date_com, y = ~SI.F.Adjusted, name = 'Silver') %>%
-  add_trace(x = date_com, y = ~PL.F.Adjusted, name = 'Platinum') %>%
-  add_trace(x = date_com, y = ~HG.F.Adjusted, name = 'Copper') %>%
-  add_trace(x = date_com, y = ~PA.F.Adjusted, name = 'Palladium') %>%
-  layout(title = 'Commodities Price Chart',
+plot_eqt_br_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~BVSP.Adjusted, name = 'IBOV') %>%
+  add_trace(x = date_mkt, y = ~SMAL11.SA.Adjusted, name = 'Small Caps') %>%
+  layout(title = 'Equity Price Chart',
          xaxis = list(title = 'Date',
               rangeselector = list(
                 buttons = list(
@@ -127,28 +167,196 @@ plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 
          yaxis = list(title = 'Price'),
          legend = list(orientation = 'h', x = 0.5, y = -0.2),
          hovermode = 'compare')
-plot_com_prices_metalics
+plot_eqt_br_prices
 ```
 
 ```{r, include=TRUE, echo = FALSE}
-#| title: Performance
-'reactable(
-  commodities_price,
-  rowStyle = list(cursor = "pointer"),
-  pagination = FALSE,
-  highlight = TRUE,
-  striped = TRUE
-)
-'
+#| title: Change MoM
+plot_eqt_br_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~BVSP.Adjusted_MoM, name = 'IBOV') %>%
+  add_trace(x = date_mkt, y = ~SMAL11.SA.Adjusted_MoM, name = 'Small Caps') %>%
+  layout(title = 'Equity Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_eqt_br_mom_prices
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_eqt_br_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~BVSP.Adjusted_YoY, name = 'IBOV') %>%
+  add_trace(x = date_mkt, y = ~SMAL11.SA.Adjusted_YoY, name = 'Small Caps') %>%
+  layout(title = 'Equity Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_eqt_br_yoy_prices
 ```
 
 # Govt. Bonds
 
+## Column {.tabset}
 
+### United States
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_bond_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~SHY.Adjusted, name = 'SHY') %>%
+  add_trace(x = date_mkt, y = ~IEF.Adjusted, name = 'IEF') %>%
+  add_trace(x = date_mkt, y = ~TLT.Adjusted, name = 'TLT') %>%
+  layout(title = 'Govt. Bond Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_bond_prices
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change MoM
+plot_bond_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~SHY.Adjusted_MoM, name = 'SHY') %>%
+  add_trace(x = date_mkt, y = ~IEF.Adjusted_MoM, name = 'IEF') %>%
+  add_trace(x = date_mkt, y = ~TLT.Adjusted_MoM, name = 'TLT') %>%
+  layout(title = 'Govt. Bond Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_bond_mom_prices
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_bond_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~SHY.Adjusted_YoY, name = 'SHY') %>%
+  add_trace(x = date_mkt, y = ~IEF.Adjusted_YoY, name = 'IEF') %>%
+  add_trace(x = date_mkt, y = ~TLT.Adjusted_YoY, name = 'TLT') %>%
+  layout(title = 'Govt. Bond Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_bond_yoy_prices
+```
+
+### Brazil
+
+#### Column {.tabset}
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Price
+plot_bond_br_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~IMAB11.SA.Adjusted, name = 'IMA-B') %>%
+  add_trace(x = date_mkt, y = ~B5P211.SA.Adjusted, name = 'IMA-B 5') %>%
+  add_trace(x = date_mkt, y = ~IB5M11.SA.Adjusted, name = 'IMA-B 5+') %>%
+  layout(title = 'Govt. Bond Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_bond_br_prices
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change MoM
+plot_bond_br_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~IMAB11.SA.Adjusted_MoM, name = 'IMA-B') %>%
+  add_trace(x = date_mkt, y = ~B5P211.SA.Adjusted_MoM, name = 'IMA-B 5') %>%
+  add_trace(x = date_mkt, y = ~IB5M11.SA.Adjusted_MoM, name = 'IMA-B 5+') %>%
+  layout(title = 'Govt. Bond Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_bond_br_mom_prices
+```
+
+```{r, include=TRUE, echo = FALSE}
+#| title: Change YoY
+plot_bond_br_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
+  add_trace(x = date_mkt, y = ~IMAB11.SA.Adjusted_YoY, name = 'IMA-B') %>%
+  add_trace(x = date_mkt, y = ~B5P211.SA.Adjusted_YoY, name = 'IMA-B 5') %>%
+  add_trace(x = date_mkt, y = ~IB5M11.SA.Adjusted_YoY, name = 'IMA-B 5+') %>%
+  layout(title = 'Govt. Bond Price Chart',
+         xaxis = list(title = 'Date',
+              rangeselector = list(
+                buttons = list(
+                  list(count=1, label="1m", step="month", stepmode="backward"),
+                  list(count=6, label="6m", step="month", stepmode="backward"),
+                  list(count=1, label="YTD", step="year", stepmode="todate"),
+                  list(count=1, label="1y", step="year", stepmode="backward"),
+                  list(step="all")
+                  ))),
+         yaxis = list(title = 'Price'),
+         legend = list(orientation = 'h', x = 0.5, y = -0.2),
+         hovermode = 'compare')
+plot_bond_br_yoy_prices
+```
 
 # Bonds
-
-
 
 # Commodities
 
@@ -166,6 +374,7 @@ plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 
   add_trace(x = date_com, y = ~PL.F.Adjusted, name = 'Platinum') %>%
   add_trace(x = date_com, y = ~HG.F.Adjusted, name = 'Copper') %>%
   add_trace(x = date_com, y = ~PA.F.Adjusted, name = 'Palladium') %>%
+  add_trace(x = date_com, y = ~TIO.F.Adjusted, name = 'Iron') %>%    
   layout(title = 'Commodities Price Chart',
          xaxis = list(title = 'Date',
               rangeselector = list(
