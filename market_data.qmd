@@ -4,11 +4,11 @@ format:
   dashboard
 ---
 
-```{r setup, include=FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r setup, include=FALSE }
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=FALSE, echo = FALSE }
 library(httr)
 library(fredr)
 library(dplyr)
@@ -22,7 +22,7 @@ library(quantmod)
 library(leaflet)
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=FALSE, echo = FALSE }
 #Defining function to import multiple series from yahoo finance
 yfdata <- function(tickers) {
   env <- new.env()
@@ -36,7 +36,7 @@ yfdata <- function(tickers) {
 }
 ```
 
-```{r, include=FALSE, echo = FALSE,warning=FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=FALSE, echo = FALSE,warning=FALSE }
 #calling financial data from yahoo finance
 tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT","^BVSP","SMAL11.SA","IMAB11.SA","B5P211.SA","IB5M11.SA")
 market_data <- yfdata(tickers)
@@ -76,7 +76,7 @@ commodities_price <- commodities_price %>%
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_eqt_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~GSPC.Adjusted, name = 'S&P500') %>%
@@ -99,7 +99,7 @@ plot_eqt_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
 plot_eqt_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_eqt_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~GSPC.Adjusted_MoM, name = 'S&P500') %>%
@@ -122,7 +122,7 @@ plot_eqt_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>
 plot_eqt_mom_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_eqt_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~GSPC.Adjusted_YoY, name = 'S&P500') %>%
@@ -149,7 +149,7 @@ plot_eqt_yoy_prices
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_eqt_br_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~BVSP.Adjusted, name = 'IBOV') %>%
@@ -170,7 +170,7 @@ plot_eqt_br_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
 plot_eqt_br_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_eqt_br_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~BVSP.Adjusted_MoM, name = 'IBOV') %>%
@@ -191,7 +191,7 @@ plot_eqt_br_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines')
 plot_eqt_br_mom_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_eqt_br_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~BVSP.Adjusted_YoY, name = 'IBOV') %>%
@@ -220,7 +220,7 @@ plot_eqt_br_yoy_prices
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_bond_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~SHY.Adjusted, name = 'SHY') %>%
@@ -242,7 +242,7 @@ plot_bond_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
 plot_bond_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_bond_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~SHY.Adjusted_MoM, name = 'SHY') %>%
@@ -264,7 +264,7 @@ plot_bond_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %
 plot_bond_mom_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_bond_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~SHY.Adjusted_YoY, name = 'SHY') %>%
@@ -290,7 +290,7 @@ plot_bond_yoy_prices
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_bond_br_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~IMAB11.SA.Adjusted, name = 'IMA-B') %>%
@@ -312,7 +312,7 @@ plot_bond_br_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>
 plot_bond_br_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_bond_br_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~IMAB11.SA.Adjusted_MoM, name = 'IMA-B') %>%
@@ -334,7 +334,7 @@ plot_bond_br_mom_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines'
 plot_bond_br_mom_prices
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_bond_br_yoy_prices <- plot_ly(market_data, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_mkt, y = ~IMAB11.SA.Adjusted_YoY, name = 'IMA-B') %>%
@@ -366,7 +366,7 @@ plot_bond_br_yoy_prices
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~GC.F.Adjusted, name = 'Gold') %>%
@@ -391,7 +391,7 @@ plot_com_prices_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 
 plot_com_prices_metalics
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_com_prices_mom_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~GC.F.Adjusted_MoM, name = 'Gold') %>%
@@ -415,7 +415,7 @@ plot_com_prices_mom_metalics <- plot_ly(commodities_price, type = 'scatter', mod
 plot_com_prices_mom_metalics
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_com_prices_yoy_metalics <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~GC.F.Adjusted_YoY, name = 'Gold') %>%
@@ -439,7 +439,7 @@ plot_com_prices_yoy_metalics <- plot_ly(commodities_price, type = 'scatter', mod
 plot_com_prices_yoy_metalics
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Performance
 'reactable(
   commodities_price,
@@ -455,7 +455,7 @@ plot_com_prices_yoy_metalics
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_com_prices_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~CL.F.Adjusted, name = 'Crude Oil') %>%
@@ -479,7 +479,7 @@ plot_com_prices_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'line
 plot_com_prices_pet
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_com_prices_mom_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~CL.F.Adjusted_MoM, name = 'Crude Oil') %>%
@@ -503,7 +503,7 @@ plot_com_prices_mom_pet <- plot_ly(commodities_price, type = 'scatter', mode = '
 plot_com_prices_mom_pet
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_com_prices_yoy_pet <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~CL.F.Adjusted_YoY, name = 'Crude Oil') %>%
@@ -527,7 +527,7 @@ plot_com_prices_yoy_pet <- plot_ly(commodities_price, type = 'scatter', mode = '
 plot_com_prices_yoy_pet
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Performance
 'reactable(
   commodities_price,
@@ -543,7 +543,7 @@ plot_com_prices_yoy_pet
 
 #### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Price
 plot_com_prices_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~ZC.F.Adjusted, name = 'Corn') %>%
@@ -576,7 +576,7 @@ plot_com_prices_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lin
 plot_com_prices_agri
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change MoM
 plot_com_prices_mom_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~ZC.F.Adjusted_MoM, name = 'Corn') %>%
@@ -609,7 +609,7 @@ plot_com_prices_mom_agri <- plot_ly(commodities_price, type = 'scatter', mode = 
 plot_com_prices_mom_agri
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Change YoY
 plot_com_prices_yoy_agri <- plot_ly(commodities_price, type = 'scatter', mode = 'lines') %>%
   add_trace(x = date_com, y = ~ZC.F.Adjusted_YoY, name = 'Corn') %>%
@@ -642,7 +642,7 @@ plot_com_prices_yoy_agri <- plot_ly(commodities_price, type = 'scatter', mode = 
 plot_com_prices_yoy_agri
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE }
+```{r, include=TRUE, echo = FALSE }
 #| title: Performance
 'reactable(
   commodities_price,

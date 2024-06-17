@@ -4,11 +4,11 @@ format:
   dashboard
 ---
 
-```{r setup, include=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=FALSE, echo = FALSE}
 library(httr)
 library(fredr)
 library(dplyr)
@@ -22,11 +22,11 @@ library(quantmod)
 library(leaflet)
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=FALSE, echo = FALSE}
 fredr_set_key("40eca8e40e1e16076ad0da999af9d5eb") 
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=FALSE, echo = FALSE}
 #defining function to import multiple series from FRED as long as the sub-args are the same (generalize more if needed)
 fetch_fred_data <- function(series_ids,start_date = "2000-01-03",freq = "m",measure = "lin") {
   data_list <- list()
@@ -49,7 +49,7 @@ fetch_fred_data <- function(series_ids,start_date = "2000-01-03",freq = "m",meas
 }
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=FALSE, echo = FALSE}
 #Defining function to import multiple series from yahoo finance
 yfdata <- function(tickers) {
   stock_env <- new.env()
@@ -61,7 +61,7 @@ yfdata <- function(tickers) {
 }
 ```
 
-```{r, include=FALSE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=FALSE, echo = FALSE}
 # calling financial data from yahoo finance
 'tickers <- c("^GSPC","^DJI","^IXIC","^RUT","SHY","IEF","TLT")
 market_series <- yfdata(tickers)
@@ -390,7 +390,7 @@ treasury_statement_m <- fetch_fred_data(series_ids = treasury_statement_m_ids, f
 
 ## Row
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #! title: US Treasury Yield Curve
 Yield_Curve_graf <- plot_ly(Yield_Curve_df, type = 'scatter', mode = 'lines') %>%
   add_trace(x = row.names(Yield_Curve_df), y = Yield_Curve_df$`1 D`, name = 'Latest') %>%
@@ -411,7 +411,7 @@ Yield_Curve_graf
 
 ### Column
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #! title: FED Funds Effective Rate 
 fed_funds_rate_graf <- plot_ly(fed_funds_rate, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~DFF, name = 'Effective') %>%
@@ -425,7 +425,7 @@ fed_funds_rate_graf
 
 ### Column
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #! title: US Treasuries
 Treasuries_graf <- plot_ly(Yield_Curve, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~DGS1MO, name = '1 Month', visible = FALSE) %>%
@@ -455,7 +455,7 @@ Treasuries_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Fiscal Result
 treasury_statement_m_graf <- plot_ly(treasury_statement_m, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~FYFRGDA188S, name = 'Receipts', visible = FALSE) %>%
@@ -484,7 +484,7 @@ treasury_statement_m_graf <- plot_ly(treasury_statement_m, type = 'scatter', mod
 treasury_statement_m_graf 
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Debt x Interest
 debt_interest_graf <- plot_ly(treasury_statement_m, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~GFDEGDQ188S, name = 'Debt') %>%
@@ -502,7 +502,7 @@ debt_interest_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #| title: Repurchase
 repurchase_graf <- plot_ly(fiscal, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~RPONTTLD, name = 'Total') %>%
@@ -514,7 +514,7 @@ repurchase_graf <- plot_ly(fiscal, type = 'scatter', mode = 'lines') %>%
 repurchase_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #| title: Reverse Repurchase
 repurchase_graf <- plot_ly(fiscal, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~RRPONTSYD, name = 'Total') %>%
@@ -528,7 +528,7 @@ repurchase_graf
 
 ### Treasury Account
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #! title: U.S. Treasury
 treasury_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~WTREGEN, name = 'Total') %>%
@@ -544,7 +544,7 @@ treasury_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #| title: Reserves
 fed_reserves_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~WRESBAL, name = 'Total') %>%
@@ -556,7 +556,7 @@ fed_reserves_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
 fed_reserves_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #| title: Balance Sheet
 fed_balance_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~WALCL, name = 'Total') %>%
@@ -570,7 +570,7 @@ fed_balance_graf
 
 ### BTFP
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #! title : 
 btfp_graf <- plot_ly(fiscal_2, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~H41RESPPALDKXAWNWW, name = 'Total') %>%
@@ -590,7 +590,7 @@ btfp_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Total
 payroll_graf <- plot_ly(Payroll_Private_Abs, type = 'bar') %>%
   add_trace(x = ~date, y = ~PAYEMS, name = 'Total', type = 'scatter', mode = 'lines') %>%
@@ -653,7 +653,7 @@ payroll_graf <- plot_ly(Payroll_Private_Abs, type = 'bar') %>%
 payroll_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Change
 payroll_chg_graf <- plot_ly(Payroll_Private_Chg, type = 'bar') %>%
   add_trace(x = ~date, y = ~PAYEMS, name = 'Total', type = 'scatter', mode = 'lines') %>%
@@ -720,7 +720,7 @@ payroll_chg_graf <- plot_ly(Payroll_Private_Chg, type = 'bar') %>%
 payroll_chg_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: YoY
 payroll_chg_graf <- plot_ly(Payroll_Private_Ch1, type = 'bar') %>%
   add_trace(x = ~date, y = ~PAYEMS, name = 'Total', type = 'scatter', mode = 'lines') %>%
@@ -791,7 +791,7 @@ payroll_chg_graf
 
 ###### Column {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Hours
 private_payroll_hours_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~AWHAETP, name = 'Hours') %>%
@@ -825,7 +825,7 @@ private_payroll_hours_graf <- plot_ly(private_payroll_earn_hours, type = 'scatte
 private_payroll_hours_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Hourly Earnings
 private_payroll_earn_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~CES0500000003, name = 'Weekly Earnings') %>%
@@ -863,7 +863,7 @@ private_payroll_earn_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter
 private_payroll_earn_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Weekly Earnings
 private_payroll_earn_w_graf <- plot_ly(private_payroll_earn_hours, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~CES0500000011, name = 'Weekly Earnings') %>%
@@ -905,7 +905,7 @@ private_payroll_earn_w_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Total
 adp_abs_graf <- plot_ly(ADP_Abs, type = 'bar') %>%
   add_trace(x = ~date, y = ~ADPMNUSNERSA, name = 'Total', type = 'scatter', mode = 'lines') %>%
@@ -927,7 +927,7 @@ adp_abs_graf <- plot_ly(ADP_Abs, type = 'bar') %>%
 adp_abs_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Change
 adp_chg_graf <- plot_ly(ADP_Chg, type = 'bar') %>%
   add_trace(x = ~date, y = ~ADPMNUSNERSA, name = 'Total', type = 'scatter', mode = 'lines') %>%
@@ -949,7 +949,7 @@ adp_chg_graf <- plot_ly(ADP_Chg, type = 'bar') %>%
 adp_chg_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Employee Number
 payroll_emp_graf <- plot_ly(private_payroll_data, type = 'bar') %>%
   add_bars(x = ~date, y = ~ADPMES1T19ENERSA, name = 'Small 1-19') %>%
@@ -1011,7 +1011,7 @@ payroll_emp_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Job Openings and Labor Turnover Survey
 Jolts_graf <- plot_ly(Jolts, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~JTSJOL, name = 'Job Openings') %>%
@@ -1027,7 +1027,7 @@ Jolts_graf <- plot_ly(Jolts, type = 'scatter', mode = 'lines') %>%
 Jolts_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Job Openings/Unemployed Persons
 unemp_plot <- plot_ly(unemp_open_ratio, type = 'scatter', mode = 'lines') %>%
   add_trace(x = unemp_open_ratio$date, y = unemp_open_ratio$value, name = 'Unemployed', visible = FALSE) %>%
@@ -1062,7 +1062,7 @@ unemp_plot
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Wage Growth Tracker 
 joined_plot <- plot_ly(Wage_Growth, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~FRBATLWGT12MMUMHGO, name = '12M Overall') %>%
@@ -1101,7 +1101,7 @@ joined_plot <- plot_ly(Wage_Growth, type = 'scatter', mode = 'lines') %>%
 joined_plot       
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Quits Rate x Wage Growth
 QUITS_RATE_graf <- plot_ly(Jolts, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~JTSQUR, name = 'Quits Rate', type = 'scatter', mode = 'lines', yaxis = 'y2') %>%
@@ -1119,7 +1119,7 @@ QUITS_RATE_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Graph
 mult_jobholders_graf_1 <- plot_ly(mult_jobholders, type = 'scatter', mode='lines') %>%
   add_trace(x = ~date, y = ~LNS12026620, name = 'Multiple Jobholders') %>%
@@ -1130,7 +1130,7 @@ mult_jobholders_graf_1 <- plot_ly(mult_jobholders, type = 'scatter', mode='lines
 mult_jobholders_graf_1
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Table
 reactable(
   mult_jobholders_1,
@@ -1147,7 +1147,7 @@ reactable(
 
 ### Labor Force Status Flows
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #! Labor Force Status Flows
 reactable(
   lf_status_flows,
@@ -1168,7 +1168,7 @@ reactable(
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Initial Claims
 reactable(
   init_cont_claims,
@@ -1183,7 +1183,7 @@ reactable(
 )
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Reasons for Unemployment
 unemp_reasons_graf <- plot_ly(unemp_reasons, type = 'bar') %>%
   add_bars(x = ~date, y = ~LNS13023706, name = 'Job Leavers') %>%
@@ -1198,7 +1198,7 @@ unemp_reasons_graf <- plot_ly(unemp_reasons, type = 'bar') %>%
 unemp_reasons_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Duration of Unemployment
 unemp_duration_graf <- plot_ly(unemp_duration, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~UEMPMEAN, name = 'Average', visible = FALSE) %>%
@@ -1257,7 +1257,7 @@ unemp_duration_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Labor Force Participation Rate
 lfpr_graf <- plot_ly(lfpr, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~CIVPART, name = 'Total') %>%
@@ -1305,7 +1305,7 @@ lfpr_graf <- plot_ly(lfpr, type = 'scatter', mode = 'lines') %>%
 lfpr_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Alternative Measures
 alt_measures_unemp_graf <- plot_ly(alt_measures_unemp, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~U1RATE, name = 'Unemployed 15+ Weeks') %>%
@@ -1327,7 +1327,7 @@ alt_measures_unemp_graf
 
 ### Families
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 Financial_Conditions_Families_graf <- plot_ly(Financial_Conditions, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~ANFCI, name = 'Adjusted') %>%
   add_trace(x = ~date, y = ~NFCINONFINLEVERAGE, name = 'Non Financial Leverage') %>%
@@ -1341,7 +1341,7 @@ Financial_Conditions_Families_graf
 
 ### Corporate
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 Financial_Conditions_Corporate_graf <- plot_ly(Financial_Conditions, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~ANFCI, name = 'Adjusted') %>%
   add_trace(x = ~date, y = ~NFCIRISK, name = 'Risk') %>%
@@ -1361,7 +1361,7 @@ Financial_Conditions_Corporate_graf
 
 ### Senior Loan Survey
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 senior_loan_graf <- plot_ly(Senior_Loan_Survey, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~DRTSCILM, name = 'Large and Middle Firms') %>%
   add_trace(x = ~date, y = ~DRTSCIS, name = 'Small Firms') %>%
@@ -1380,7 +1380,7 @@ senior_loan_graf
 
 ### Delinquency Rate
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 reactable(
   Delinquency_Rate,
   #groupBy = "Names",
@@ -1406,7 +1406,7 @@ reactable(
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #| title: Overview
 cpi_graf <- plot_ly(CPI_special, type = "scatter", mode = "lines") %>%
   add_trace(x = CPI$date, y = CPI$CPIAUCSL, name = "CPI") %>%
@@ -1436,7 +1436,7 @@ cpi_graf <- plot_ly(CPI_special, type = "scatter", mode = "lines") %>%
 cpi_graf                
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: FED Atlanta
 cpi_sticky_graf <- plot_ly(cpi_sticky_pc1, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~STICKCPIM159SFRBATL, name = 'Sticky') %>%
@@ -1483,7 +1483,7 @@ cpi_sticky_graf <- plot_ly(cpi_sticky_pc1, type = 'scatter', mode = 'lines') %>%
 cpi_sticky_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Table
 reactable(
   CPI_table_data,
@@ -1507,7 +1507,7 @@ reactable(
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE}
 #| title: Overview
 pce_graf <- plot_ly(PCE, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~PCEPI, name = 'PCE') %>%
@@ -1520,7 +1520,7 @@ pce_graf <- plot_ly(PCE, type = 'scatter', mode = 'lines') %>%
 pce_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: Trajectory Probability
 pce_prob_graf <- plot_ly(pce_prob, type = 'bar') %>%
   add_bars(x = ~date, y = ~STLPPMDEF, name = '< 0%') %>%
@@ -1537,7 +1537,7 @@ pce_prob_graf
 
 ### PPI
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #! title: PPI Overview
 ppi_graf <- plot_ly(PPI, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~PPIFIS_MoM, name = 'Overall') %>%
@@ -1575,7 +1575,7 @@ ppi_graf
 
 #### Row {.tabset}
 
-```{r, include=TRUE, echo = FALSE, warning = FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning = FALSE}
 #| title: New houses
 housing_df_graf <- plot_ly(housing_df, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~PERMIT, name = 'Total') %>%
@@ -1658,7 +1658,7 @@ housing_df_graf <- plot_ly(housing_df, type = 'scatter', mode = 'lines') %>%
 housing_df_graf
 ```
 
-```{r, include=TRUE, echo = FALSE, warning=FALSE, cache=TRUE, cache.rebuild=TRUE}
+```{r, include=TRUE, echo = FALSE, warning=FALSE}
 #| title: House Price Indexes vs OER
 house_price_graf <- plot_ly(housing_price_indexes, type = 'scatter', mode = 'lines') %>%
   add_trace(x = ~date, y = ~CSUSHPISA, name = 'Shiller') %>%
