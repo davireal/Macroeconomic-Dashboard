@@ -68,6 +68,189 @@ commodities_price <- commodities_price %>%
             .cols = 3:ncol(commodities_price))
 ```
 
+```{r, include=FALSE, echo = FALSE,warning=FALSE}
+normalizar <- function(tabela) {
+  # Obtém os valores de referência da primeira linha
+  valores_referencia <- as.numeric(tabela[1, ])
+  
+  # Seleciona a tabela a partir da segunda linha
+  tabela_subset <- tabela[-1, ]
+  
+  # Realiza as operações de normalização
+'  tabela_normalizada <- sweep(tabela_subset, 2, valores_referencia, `-`)'
+  tabela_normalizada <- sweep(tabela_subset, 2, valores_referencia, `/`) -1
+  tabela_normalizada <- (tabela_normalizada) * -100
+  
+  # Adiciona de volta a primeira linha não normalizada
+  tabela_normalizada <- rbind(tabela[1, ], tabela_normalizada)
+
+  return(tabela_normalizada)
+}
+```
+
+```{r, include=FALSE, echo = FALSE,warning=FALSE}
+equity_tickers <- c("^GSPC","^DJI","^IXIC","^RUT","^BVSP","SMAL11.SA")
+equities <- yfdata(equity_tickers)
+date_equities <- equities$Date
+equities <- equities[,!grepl("*Date",names(equities))]
+equities <- equities[c(nrow(equities),
+                       nrow(equities) - 1,
+                       nrow(equities) - 22,
+                       nrow(equities)-252,
+                       nrow(equities)-756), ]
+
+equities <- normalizar(equities)
+equities <- equities[, c("GSPC.Adjusted","IXIC.Adjusted","DJI.Adjusted","RUT.Adjusted",
+                         "BVSP.Adjusted","SMAL11.SA.Adjusted")]
+colnames(equities) <- c('S&P500','Nasdaq','Dow Jones','Russel 2000','IBOV','SMLL11')
+equities <- t(equities)
+equities <- as.data.frame(equities)
+colnames(equities) <- c('Prices','1D','1M','1A','3A')
+equities <- round(equities, 1)
+equities[ ,1] <- round(equities[ ,1], 0)
+
+govt_bonds_tickers <- c("SHY","IEF","TLT","IMAB11.SA","B5P211.SA","IB5M11.SA")
+govt_bonds <- yfdata(govt_bonds_tickers)
+date_govt_bonds <- govt_bonds$Date
+govt_bonds <- govt_bonds[,!grepl("*Date",names(govt_bonds))]
+govt_bonds <- govt_bonds[c(nrow(govt_bonds),
+                       nrow(govt_bonds) - 1,
+                       nrow(govt_bonds) - 22,
+                       nrow(govt_bonds)-250,
+                       nrow(govt_bonds)-756), ]
+
+govt_bonds <- normalizar(govt_bonds)
+govt_bonds <- govt_bonds[, c("SHY.Adjusted","IEF.Adjusted","TLT.Adjusted","IMAB11.SA.Adjusted","B5P211.SA.Adjusted","IB5M11.SA.Adjusted")]
+colnames(govt_bonds) <- c('SHY','IEF','TLT','IMA-B','IMA-B 5','IMA-B 5+')
+govt_bonds <- t(govt_bonds)
+govt_bonds <- as.data.frame(govt_bonds)
+colnames(govt_bonds) <- c('Prices','1D','1M','1A','3A')
+govt_bonds <- round(govt_bonds, 1)
+govt_bonds[ ,1] <- round(govt_bonds[, 1], 0)
+
+commodity_tickers <- c("GC=F","SI=F","PL=F","HG=F","PA=F","TIO=F","CL=F","HO=F",
+"NG=F","RB=F","BZ=F","ZC=F","ZO=F","KE=F","ZR=F","ZL=F","ZS=F","HE=F","LE=F",
+"CC=F","KC=F","CT=F","LBS=F","OJ=F","SB=F"
+)
+commodity <- yfdata(commodity_tickers)
+date_commodity <- commodity$Date
+commodity <- commodity[,!grepl("*Date",names(commodity))]
+commodity <- commodity[c(nrow(commodity),
+                       nrow(commodity) - 1,
+                       nrow(commodity) - 22,
+                       nrow(commodity)-260,
+                       nrow(commodity)-756), ]
+
+commodity <- normalizar(commodity)
+commodity <- commodity[, c("GC.F.Adjusted","SI.F.Adjusted","PL.F.Adjusted",
+"HG.F.Adjusted","PA.F.Adjusted","TIO.F.Adjusted","CL.F.Adjusted","HO.F.Adjusted",
+"NG.F.Adjusted","RB.F.Adjusted","BZ.F.Adjusted","ZC.F.Adjusted","ZO.F.Adjusted",
+"KE.F.Adjusted","ZR.F.Adjusted","ZL.F.Adjusted","ZS.F.Adjusted","HE.F.Adjusted",
+"LE.F.Adjusted","CC.F.Adjusted","KC.F.Adjusted","CT.F.Adjusted",
+"OJ.F.Adjusted","SB.F.Adjusted"
+)]
+colnames(commodity) <- c('Gold','Silver','Platinum','Copper','Palladium','Iron',
+'Crude Oil','Heating Oil','Natural Gas','Gasoline','Brent',
+'Corn','Oat','Wheat','Rice','Soybean Oil','Soybean','Hogs','Cattle','Cocoa','Coffee','Cotton','Orange Juice','Sugar')
+commodity <- t(commodity)
+commodity <- as.data.frame(commodity)
+colnames(commodity) <- c('Prices','1D','1M','1A','3A')
+commodity <- round(commodity, 1)
+commodity[ ,1] <- round(commodity[, 1], 0)
+
+fx_tickers <- c("DX-Y.NYB","BRL=X","EURBRL=X","CHFBRL=X","CLPBRL=X","ZARBRL=X",
+"CADBRL=X","AUDBRL=X","JPYBRL=X","INRBRL=X","GBPBRL=X")
+fx <- yfdata(fx_tickers)
+date_fx <- fx$Date
+fx <- fx[,!grepl("*Date",names(fx))]
+fx <- fx[c(nrow(fx),
+                       nrow(fx) - 1,
+                       nrow(fx) - 22,
+                       nrow(fx)-252,
+                       nrow(fx)-756), ]
+
+fx <- normalizar(fx)
+fx <- fx[, c("DX.Y.NYB.Adjusted","BRL.X.Adjusted","EURBRL.X.Adjusted",
+"GBPBRL.X.Adjusted","AUDBRL.X.Adjusted","CHFBRL.X.Adjusted","CLPBRL.X.Adjusted",
+"ZARBRL.X.Adjusted","CADBRL.X.Adjusted","JPYBRL.X.Adjusted","INRBRL.X.Adjusted")]
+colnames(fx) <- c('Dólar','USB/BRL','EUR/BRL','GBP/BRL','AUD/BRL','CHF/BRL',
+'CLP/BRL','ZAR/BRL','CAD/BRL','JPY/BRL','INR/BRL')
+fx <- t(fx)
+fx <- as.data.frame(fx)
+colnames(fx) <- c('Prices','1D','1M','1A','3A')
+fx <- round(fx, 2)
+```
+
+# Prices
+
+## Row
+
+### Column
+
+```{r, include=TRUE, echo = FALSE }
+reactable(
+  equities,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  outlined = TRUE,
+  compact = TRUE, 
+  resizable = TRUE, 
+  wrap = TRUE
+)
+```
+
+### Column
+
+```{r, include=TRUE, echo = FALSE }
+reactable(
+  govt_bonds,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  outlined = TRUE,
+  compact = TRUE, 
+  resizable = TRUE, 
+  wrap = TRUE
+  )
+```
+
+## Row
+
+### Column
+
+```{r, include=TRUE, echo = FALSE }
+reactable(
+  commodity,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  outlined = TRUE,
+  compact = TRUE, 
+  resizable = TRUE, 
+  wrap = TRUE
+  )
+```
+
+### Column
+
+```{r, include=TRUE, echo = FALSE }
+reactable(
+  fx,
+  rowStyle = list(cursor = "pointer"),
+  pagination = FALSE,
+  highlight = TRUE,
+  striped = TRUE,
+  outlined = TRUE,
+  compact = TRUE, 
+  resizable = TRUE, 
+  wrap = TRUE
+  )
+```
+
 # Equity
 
 ## Column {.tabset}
@@ -439,18 +622,6 @@ plot_com_prices_yoy_metalics <- plot_ly(commodities_price, type = 'scatter', mod
 plot_com_prices_yoy_metalics
 ```
 
-```{r, include=TRUE, echo = FALSE }
-#| title: Performance
-'reactable(
-  commodities_price,
-  rowStyle = list(cursor = "pointer"),
-  pagination = FALSE,
-  highlight = TRUE,
-  striped = TRUE
-)
-'
-```
-
 ### Petroleum Derivatives
 
 #### Column {.tabset}
@@ -525,18 +696,6 @@ plot_com_prices_yoy_pet <- plot_ly(commodities_price, type = 'scatter', mode = '
          legend = list(orientation = 'h', x = 0.5, y = -0.2),
          hovermode = 'compare')
 plot_com_prices_yoy_pet
-```
-
-```{r, include=TRUE, echo = FALSE }
-#| title: Performance
-'reactable(
-  commodities_price,
-  rowStyle = list(cursor = "pointer"),
-  pagination = FALSE,
-  highlight = TRUE,
-  striped = TRUE
-)
-'
 ```
 
 ### Grain and Livestock
@@ -640,18 +799,6 @@ plot_com_prices_yoy_agri <- plot_ly(commodities_price, type = 'scatter', mode = 
          legend = list(orientation = 'h', x = 0.5, y = -0.2),
          hovermode = 'compare')
 plot_com_prices_yoy_agri
-```
-
-```{r, include=TRUE, echo = FALSE }
-#| title: Performance
-'reactable(
-  commodities_price,
-  rowStyle = list(cursor = "pointer"),
-  pagination = FALSE,
-  highlight = TRUE,
-  striped = TRUE
-)
-'
 ```
 
 # Currencies
