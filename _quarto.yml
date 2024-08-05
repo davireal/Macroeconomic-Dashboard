@@ -10,6 +10,8 @@ website:
         href: index.qmd
       - text: "Market"
         href: market_data.qmd
+    right: 
+      - text: 05/08/2024
         
 format:
   dashboard
