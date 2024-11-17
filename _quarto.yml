@@ -11,7 +11,7 @@ website:
       - text: "Market"
         href: market_data.qmd
     right: 
-      - text: "01/11/2024"
+      - text: "17/11/2024"
         
 format:
   dashboard
